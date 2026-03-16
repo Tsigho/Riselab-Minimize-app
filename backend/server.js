@@ -6,6 +6,7 @@ const { Server } = require('socket.io');
 const cors = require('cors');
 const fs = require('fs');
 const bodyParser = require('body-parser');
+const axios = require('axios'); // IMPORTANTE: Adicionado axios para a chamada à PaySuite
 require('dotenv').config({ path: '../.env' });
 const { createClient } = require('@supabase/supabase-js');
 const qrcode = require('qrcode-terminal');
@@ -13,7 +14,7 @@ const qrcode = require('qrcode-terminal');
 const app = express();
 app.use(cors({
     origin: '*', // Se preferir, pode colocar 'https://riselab-frontend.vercel.app' aqui depois para mais segurança
-    methods: ['GET', 'POST']
+    methods: ['GET', 'POST', 'OPTIONS']
 }));
 app.use(bodyParser.json());
 
@@ -23,7 +24,6 @@ const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SU
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 // 🚀 CONFIGURAÇÃO DO GROQ (BLINDADA CONTRA O GITHUB)
-// Agora ele puxa a chave de forma secreta das variáveis de ambiente!
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const server = http.createServer(app);
@@ -220,6 +220,50 @@ io.on('connection', (socket) => {
 });
 
 const { sendSaleToRastroMoz } = require('./lib/notify-rastromoz');
+
+// 🚀 A ROTA DA PAYSUITE CORRIGIDA (AGORA ELA FORÇA A URL DE RETORNO)
+app.post('/api/pagar-paysuite', async (req, res) => {
+    console.log('Recebido pedido de pagamento:', req.body);
+
+    // Puxa os dados que o frontend enviou
+    const { customer_name, customer_email, phone, amount, channel, reference, return_url } = req.body;
+
+    // 🛡️ A MÁGICA: Se o frontend esquecer, nós injetamos o return_url à força
+    const safeReturnUrl = return_url || "https://riselab-frontend.vercel.app/checkout-success";
+
+    try {
+        const payloadParaPaySuite = {
+            customer_name: customer_name,
+            customer_email: customer_email || "cliente@minimizing.com",
+            phone: phone,
+            amount: amount,
+            channel: channel,
+            reference: reference,
+            return_url: safeReturnUrl // O campo obrigatório que faltava
+        };
+
+        // Faz a chamada real para a API da PaySuite
+        // NOTA: Certifique-se que no painel do Render tem a variável PAYSUITE_API_KEY
+        const response = await axios.post("https://pay.paysuite.co.mz/api/v1/payments", payloadParaPaySuite, {
+            headers: {
+                "Authorization": `Bearer ${process.env.PAYSUITE_API_KEY}`,
+                "Content-Type": "application/json"
+            }
+        });
+
+        console.log("PaySuite Sucesso:", response.data);
+        return res.json({ success: true, data: response.data });
+
+    } catch (error) {
+        console.error("Erro na PaySuite:", error.response?.data || error.message);
+        return res.status(422).json({
+            success: false,
+            message: "Erro ao gerar link na PaySuite",
+            details: error.response?.data || error.message
+        });
+    }
+});
+
 
 // WEBHOOK
 app.post('/webhook/payment', async (req, res) => {
