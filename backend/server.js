@@ -116,7 +116,7 @@ app.post('/api/pagar-paysuite', async (req, res) => {
         console.log("Enviando Payload:", payloadParaPaySuite);
 
         // 🎯 Chamada para o Endpoint de Checkout
-        const response = await axios.post("https://paysuite.co.mz/v1/checkout", payloadParaPaySuite, {
+        const response = await axios.post("https://paysuite.tech/api/v1/payments", payloadParaPaySuite, {
             headers: {
                 "Authorization": `Bearer ${process.env.PAYSUITE_API_KEY}`,
                 "Content-Type": "application/json",
