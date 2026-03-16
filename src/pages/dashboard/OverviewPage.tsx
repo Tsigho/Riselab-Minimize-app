@@ -2,18 +2,18 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer
 } from 'recharts';
 import {
-    Wallet, Users, ArrowUpRight, ArrowDownRight, Activity, DollarSign, CreditCard
+    Wallet, Users, ArrowUpRight, ArrowDownRight, Activity, CreditCard
 } from 'lucide-react';
 
 // DADOS FALSOS PARA O GRÁFICO (Depois ligamos no Supabase)
 const data = [
-    { name: 'Seg', valor: 4000 },
-    { name: 'Ter', valor: 3000 },
-    { name: 'Qua', valor: 2000 },
-    { name: 'Qui', valor: 2780 },
-    { name: 'Sex', valor: 1890 },
-    { name: 'Sáb', valor: 2390 },
-    { name: 'Dom', valor: 3490 },
+    { name: 'Seg', valor: 0 },
+    { name: 'Ter', valor: 0 },
+    { name: 'Qua', valor: 0 },
+    { name: 'Qui', valor: 0 },
+    { name: 'Sex', valor: 0 },
+    { name: 'Sáb', valor: 0 },
+    { name: 'Dom', valor: 0 },
 ];
 
 export const OverviewPage = () => {
@@ -38,30 +38,30 @@ export const OverviewPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 relative z-10">
                 <StatsCard
                     title="Saldo Total"
-                    value="124.500 MT"
+                    value="0 MT"
                     icon={Wallet}
-                    trend="+12%"
+                    trend="0%"
                     color="green"
                 />
                 <StatsCard
                     title="Vendas Hoje"
-                    value="4.200 MT"
+                    value="0 MT"
                     icon={Activity}
-                    trend="+5%"
+                    trend="0%"
                     color="blue"
                 />
                 <StatsCard
                     title="Novos Clientes"
-                    value="34"
+                    value="0"
                     icon={Users}
-                    trend="+18%"
+                    trend="0%"
                     color="purple"
                 />
                 <StatsCard
                     title="Gastos (Ads)"
-                    value="1.200 MT"
+                    value="0 MT"
                     icon={CreditCard}
-                    trend="-2%"
+                    trend="0%"
                     color="red"
                 />
             </div>
@@ -73,8 +73,8 @@ export const OverviewPage = () => {
                 <div className="lg:col-span-2 bg-card/50 border border-border rounded-2xl p-6 backdrop-blur-sm shadow-xl">
                     <div className="flex justify-between items-center mb-6">
                         <h3 className="text-lg font-semibold text-foreground">Receita Semanal</h3>
-                        <span className="text-xs bg-slate-800 text-green-400 px-2 py-1 rounded-full border border-green-900">
-                            +22.5% vs semana passada
+                        <span className="text-xs bg-slate-800 text-slate-400 px-2 py-1 rounded-full border border-slate-700">
+                            0% vs semana passada
                         </span>
                     </div>
 
@@ -112,20 +112,9 @@ export const OverviewPage = () => {
                 <div className="bg-card/50 border border-border rounded-2xl p-6 backdrop-blur-sm shadow-xl">
                     <h3 className="text-lg font-semibold text-foreground mb-4">Últimas Transações</h3>
                     <div className="space-y-4">
-                        {[1, 2, 3, 4, 5].map((i) => (
-                            <div key={i} className="flex items-center justify-between p-3 hover:bg-muted/50 rounded-lg transition-colors cursor-pointer group">
-                                <div className="flex items-center gap-3">
-                                    <div className="h-10 w-10 rounded-full bg-slate-800 flex items-center justify-center group-hover:bg-green-900/30 transition-colors">
-                                        <DollarSign className="h-5 w-5 text-green-500" />
-                                    </div>
-                                    <div>
-                                        <p className="text-sm font-medium text-foreground">Venda Curso React</p>
-                                        <p className="text-xs text-muted-foreground">Há 2 min • M-Pesa</p>
-                                    </div>
-                                </div>
-                                <span className="text-sm font-bold text-green-400">+500 MT</span>
-                            </div>
-                        ))}
+                        <div className="p-4 text-center text-muted-foreground text-sm">
+                            Nenhuma transação ainda.
+                        </div>
                     </div>
                     <button className="w-full mt-4 text-sm text-muted-foreground hover:text-green-400 transition-colors">
                         Ver tudo

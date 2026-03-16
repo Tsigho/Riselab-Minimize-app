@@ -11,7 +11,10 @@ const { createClient } = require('@supabase/supabase-js');
 const qrcode = require('qrcode-terminal');
 
 const app = express();
-app.use(cors());
+app.use(cors({
+    origin: '*', // Se preferir, pode colocar 'https://riselab-frontend.vercel.app' aqui depois para mais segurança
+    methods: ['GET', 'POST']
+}));
 app.use(bodyParser.json());
 
 // Initialize Supabase
@@ -19,8 +22,9 @@ const supabaseUrl = process.env.VITE_SUPABASE_URL;
 const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const supabase = createClient(supabaseUrl, supabaseKey);
 
-// CONFIGURAÇÃO DO GROQ (Llama 3)
-const groq = new Groq({ apiKey: "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" });
+// 🚀 CONFIGURAÇÃO DO GROQ (BLINDADA CONTRA O GITHUB)
+// Agora ele puxa a chave de forma secreta das variáveis de ambiente!
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const server = http.createServer(app);
 const io = new Server(server, { cors: { origin: "*", methods: ["GET", "POST"] } });
@@ -99,28 +103,25 @@ async function connectToWhatsApp(socket = null) {
 async function handleAIResponse(sock, msg, userText) {
     const remoteJid = msg.key.remoteJid;
 
-    // 1. BUSCAR TUDO (Mudamos para select('*') para não errar o nome da coluna)
+    // 1. BUSCAR TUDO
     const { data: products, error } = await supabase
         .from('products')
-        .select('*') // <--- MUDANÇA AQUI: Traz todas as colunas
-        .eq('is_active', true) // Garante que só pega produtos ativos
+        .select('*')
+        .eq('is_active', true)
         .limit(10);
 
     if (error) {
         console.error('❌ Erro Supabase:', error.message);
-        // Se der erro, não para o robô, apenas segue sem produtos
     }
 
-    // 2. DEBUG VISUAL (Vai aparecer no terminal o nome certo das colunas)
     if (products && products.length > 0) {
-        console.log('� Exemplo de produto encontrado:', products[0]);
+        console.log('📦 Exemplo de produto encontrado:', products[0]);
     }
 
-    // 3. FORMATAÇÃO INTELIGENTE (Tenta achar o nome certo)
+    // 3. FORMATAÇÃO INTELIGENTE
     let catalogoTexto = "";
     if (products && products.length > 0) {
         catalogoTexto = products.map(p => {
-            // Tenta achar o nome em várias colunas comuns
             const nome = p.title || p.name || p.nome || p.product_name || "Produto Sem Nome";
             const preco = p.price || p.preco || p.valor || "0";
             const desc = p.description || p.descricao || "";
@@ -157,8 +158,8 @@ async function handleAIResponse(sock, msg, userText) {
                 },
                 { role: "user", content: userText }
             ],
-            model: "llama-3.3-70b-versatile", // O modelo potente
-            temperature: 0.7, // Criatividade equilibrada
+            model: "llama-3.3-70b-versatile",
+            temperature: 0.7,
         });
 
         const resposta = completion.choices[0]?.message?.content || "Desculpe, tive um lapso de memória.";
@@ -218,6 +219,8 @@ io.on('connection', (socket) => {
     });
 });
 
+const { sendSaleToRastroMoz } = require('./lib/notify-rastromoz');
+
 // WEBHOOK
 app.post('/webhook/payment', async (req, res) => {
     const { reference, status, amount, customer_name } = req.body;
@@ -236,17 +239,42 @@ app.post('/webhook/payment', async (req, res) => {
 
         if (error) console.error('Error updating DB:', error);
         else console.log('✅ DB Updated:', data);
+
+        // --- RASTROMOZ INTEGRATION ---
+        if (data && data.length > 0 && (status === 'completed' || status === 'paid')) {
+            const purchase = data[0];
+
+            sendSaleToRastroMoz({
+                amount: amount,
+                currency: "MZN",
+                transactionId: reference,
+                clickId: purchase.click_id,
+                productName: "Produto RiseLab",
+                customerEmail: "cliente@email.com"
+            });
+
+            io.emit('payment_received', {
+                reference,
+                amount,
+                customer: customer_name || "Cliente",
+                timestamp: new Date().toISOString()
+            });
+
+            if (purchase.customer_phone) {
+                const { error: leadError } = await supabase
+                    .from('sales_leads')
+                    .update({ status: 'paid' })
+                    .eq('customer_phone', purchase.customer_phone)
+                    .eq('amount', amount)
+                    .eq('status', 'pending');
+
+                if (leadError) console.error('❌ Erro ao atualizar Lead:', leadError);
+                else console.log('✅ Lead atualizado para PAID');
+            }
+        }
+
     } catch (err) {
         console.error('Supabase Exception:', err);
-    }
-
-    if (status === 'completed' || status === 'paid') {
-        io.emit('payment_received', {
-            reference,
-            amount,
-            customer: customer_name || "Cliente",
-            timestamp: new Date().toISOString()
-        });
     }
 
     return res.status(200).json({ received: true });

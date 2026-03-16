@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="utf-8" /><title>Checkout - RiseLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>body { background-color: #0b0811; color: white; font-family: sans-serif; }</style>
+</head>
+<body class="min-h-screen flex items-center justify-center p-4">
+    <div class="max-w-md w-full bg-[#12101b] p-8 rounded-3xl border border-white/5 shadow-2xl text-center">
+        <h2 id="product-title" class="text-2xl font-bold mb-2">Carregando...</h2>
+        <p id="product-price" class="text-3xl font-black text-green-500 mb-6">... MZN</p>
+        
+        <input id="c-name" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl mb-4 outline-none" placeholder="Nome Completo">
+        <input id="c-email" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl mb-4 outline-none" placeholder="E-mail">
+        <input id="c-phone" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl mb-6 outline-none" placeholder="84XXXXXXX">
+        
+        <button id="pay-btn" class="w-full py-5 bg-[#00b574] rounded-xl font-bold text-lg hover:brightness-110 transition-all">PAGAR AGORA</button>
+    </div>
+
+    <script>
+        const params = new URLSearchParams(window.location.search);
+        const pName = params.get('produto') || 'Produto';
+        const pPrice = params.get('preco') || '0';
+        const pDownload = params.get('download') || '#';
+
+        document.getElementById('product-title').innerText = pName;
+        document.getElementById('product-price').innerText = pPrice + " MZN";
+
+        document.getElementById('pay-btn').addEventListener('click', async () => {
+            const btn = document.getElementById('pay-btn');
+            btn.innerText = "GERANDO PAGAMENTO...";
+            btn.disabled = true;
+
+            try {
+                // 🎯 REDIRECIONA PARA O REACT PASSANDO O LINK DO ARQUIVO
+                const returnUrl = `${window.location.origin}/checkout-success?link=${encodeURIComponent(pDownload)}&price=${pPrice}&prodId=${pProdId}&sellerId=${pSellerId}`;
+
+                const res = await fetch('https://risilabteste.onrender.com/api/pagar-paysuite', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        customer_name: document.getElementById('c-name').value,
+                        customer_email: document.getElementById('c-email').value,
+                        phone: "258" + document.getElementById('c-phone').value,
+                        amount: parseFloat(pPrice),
+                        reference: "RISE" + Date.now(),
+                        return_url: returnUrl
+                    })
+                });
+
+                const result = await res.json();
+                const resultString = JSON.stringify(result);
+                const linkMatch = resultString.match(/https?:\/\/[^"'\s]*paysuite[^"'\s]*/);
+
+                if (linkMatch) {
+                    window.location.href = linkMatch[0].replace(/\\/g, '');
+                } else {
+                    alert("Erro ao gerar link. Verifique o saldo.");
+                    btn.disabled = false;
+                    btn.innerText = "TENTAR NOVAMENTE";
+                }
+            } catch (e) {
+                alert("Erro de conexão.");
+                btn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>

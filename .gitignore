@@ -32,3 +32,4 @@ pnpm-debug.log*
 
 # Misc
 *.log
+backend/auth_info_baileys/

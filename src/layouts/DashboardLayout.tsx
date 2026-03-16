@@ -13,14 +13,17 @@ import {
     MessageSquare,
     Wrench,
     DollarSign,
-    BookOpen
+    BookOpen,
+    ShieldAlert
 } from "lucide-react";
 import { supabase } from "../lib/supabase";
+import { Button } from "../components/ui/Primitives";
 
 const sidebarItems = [
     { icon: LayoutDashboard, label: "Visão Geral", path: "/dashboard" },
     { icon: BookOpen, label: "Minha Biblioteca", path: "/dashboard/library" },
     { icon: Package, label: "Meus Produtos", path: "/dashboard/products" },
+    { icon: Users, label: "Gestão de Clientes", path: "/dashboard/clients" },
     { icon: ShoppingCart, label: "Marketplace Global", path: "/dashboard/marketplace" },
     { icon: Users, label: "Painel de Afilhados", path: "/dashboard/affiliates" }, // "Painel de Afilhados"
     { icon: MessageSquare, label: "Mensagens", path: "/dashboard/messages" },
@@ -106,6 +109,42 @@ const UserHeader = () => {
                 )}
             </div>
         </div>
+    );
+};
+
+export const BotaoAdminSecreto = () => {
+    const [isAdmin, setIsAdmin] = useState(false);
+
+    useEffect(() => {
+        const verificarCoroa = async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data } = await supabase
+                .from('profiles')
+                .select('role')
+                .eq('id', user.id)
+                .single();
+
+            if (data?.role === 'admin') {
+                setIsAdmin(true);
+            }
+        };
+
+        verificarCoroa();
+    }, []);
+
+    // Se não for Admin, o botão simplesmente não existe na tela
+    if (!isAdmin) return null;
+
+    // Se for Admin, o botão dourado aparece!
+    return (
+        <Link to="/admin" className="block mb-2">
+            <Button className="w-full bg-amber-500 hover:bg-amber-600 text-black font-bold shadow-[0_0_15px_rgba(245,158,11,0.4)] flex items-center gap-2 justify-start">
+                <ShieldAlert className="w-5 h-5 shrink-0" />
+                <span className="truncate">SALA DE CONTROLE</span>
+            </Button>
+        </Link>
     );
 };
 
@@ -218,6 +257,7 @@ export const DashboardLayout = () => {
                     })}
 
                     <div className="pt-4 mt-4 border-t border-border">
+                        <BotaoAdminSecreto />
                         <button
                             onClick={handleSignOut}
                             className="w-full flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium text-destructive hover:bg-destructive/10 transition-colors"

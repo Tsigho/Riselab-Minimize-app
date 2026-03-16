@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="pt" translate="no">
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>Pagamento Aprovado - RiseLab</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@400&display=swap" rel="stylesheet"/>
+    <style>
+        body { background-color: #0b0811; font-family: 'Public Sans', sans-serif; }
+    </style>
+</head>
+<body class="text-white min-h-screen flex items-center justify-center p-4">
+    <div class="w-full max-w-md bg-[#12101b] rounded-[2rem] p-8 text-center border border-white/5 shadow-2xl">
+        <div class="w-20 h-20 bg-[#00b574]/20 rounded-full flex items-center justify-center mx-auto mb-6">
+            <span class="material-symbols-outlined text-5xl text-[#00b574]">check_circle</span>
+        </div>
+        <h2 class="text-3xl font-bold mb-2">Pagamento Aprovado!</h2>
+        <p class="text-slate-400 mb-8">Obrigado pela sua compra. O seu acesso foi liberado com sucesso.</p>
+        
+        <a id="btn-download" href="#" target="_blank" class="w-full flex items-center justify-center gap-2 bg-[#ff5a1f] hover:bg-[#e04a15] py-4 rounded-xl font-bold text-lg transition-colors">
+            <span class="material-symbols-outlined">download</span>
+            ACESSAR MATERIAL
+        </a>
+        
+        <a href="/" class="block mt-6 text-sm text-slate-500 hover:text-white transition-colors">Voltar para a Loja</a>
+    </div>
+
+    <script>
+        // LÃª o link mÃ¡gico que a PaySuite devolveu na URL
+        const params = new URLSearchParams(window.location.search);
+        const linkDoArquivo = params.get('link');
+
+        // Se o link existir, coloca no botÃ£o de download!
+        if(linkDoArquivo && linkDoArquivo !== '#') {
+            document.getElementById('btn-download').href = linkDoArquivo;
+        } else {
+            document.getElementById('btn-download').innerText = "PRODUTO SEM LINK";
+        }
+    </script>
+</body>
+</html>

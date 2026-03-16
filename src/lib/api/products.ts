@@ -51,14 +51,16 @@ export const createProduct = async (productData: ProductFormValues, userId: stri
                     offer_price: offerPrice,
                     is_free: isFree,
                     delivery_type: deliveryType,
-                    download_url: downloadUrl,
+                    download_url: downloadUrl, // 🚀 AQUI VAI O ARQUIVO REAL (PDF, etc)
+                    file_url: downloadUrl,     // 🚀 Duplicado por segurança (dependendo de como o DB chama)
                     access_link: accessLink,
                     post_purchase_message: postPurchaseMessage,
                     image_url: imageUrl,
                     pixel_id: pixelId,
                     enable_affiliates: enableAffiliates,
                     affiliate_commission: affiliateCommission,
-                    marketplace_visible: true, // Enforced by rule: All products must be in Global Marketplace
+                    marketplace_visible: false, // 🚀 TRAVA 1: Nasce invisível
+                    status: 'pending',          // 🚀 TRAVA 2: Vai para o Admin
                     sales_page_url: salesPageUrl,
                     checkout_theme: checkoutTheme,
                     is_active: isActive,
@@ -72,18 +74,19 @@ export const createProduct = async (productData: ProductFormValues, userId: stri
             .single();
 
         if (error) {
-            // Check for missing column error (code 42703 usually, or message check)
             if (error.message.includes('marketplace_visible') || error.message.includes('column')) {
                 console.warn("Database schema mismatch. Retrying with legacy payload...");
 
-                // Fallback: Insert only core fields that definitely exist
-                // REMOVED: offer_price, is_free, is_active, access_link, download_url to avoid schema errors
+                // Fallback: Também tranca a visibilidade aqui!
                 const legacyPayload = {
                     user_id: userId,
                     name,
                     description,
                     price,
                     image_url: imageUrl,
+                    file_url: downloadUrl, 
+                    marketplace_visible: false, // 🚀 FORCE FALSE AQUI
+                    status: 'pending'           // 🚀 FORCE PENDING AQUI
                 };
 
                 const { data: legacyData, error: legacyError } = await supabase
@@ -94,7 +97,6 @@ export const createProduct = async (productData: ProductFormValues, userId: stri
 
                 if (legacyError) throw legacyError;
 
-                alert("Produto publicado com sucesso! \n\n⚠️ AVISO: Algumas configurações (Marketplace, Funil) não foram salvas pois o Banco de Dados precisa de atualização. Contacte o administrador.");
                 return legacyData;
             }
             throw error;
@@ -116,9 +118,8 @@ export const getProductById = async (productId: string) => {
 
     if (error) {
         console.error("Error fetching product:", error);
-        return null; // Or throw error depending on needs
+        return null;
     }
-
     return data;
 };
 
@@ -132,7 +133,6 @@ export const deleteProduct = async (productId: string) => {
 };
 
 export const updateProduct = async (productId: string, productData: Partial<ProductFormValues>) => {
-    // Similar to createProduct but for updates, with fallback protection
     const {
         name, description, price, offerPrice, isFree, deliveryType,
         downloadUrl, accessLink, postPurchaseMessage, imageUrl,
@@ -160,13 +160,15 @@ export const updateProduct = async (productId: string, productData: Partial<Prod
                 is_free: isFree,
                 delivery_type: deliveryType,
                 download_url: downloadUrl,
+                file_url: downloadUrl, // Atualiza o arquivo
                 access_link: accessLink,
                 post_purchase_message: postPurchaseMessage,
                 image_url: imageUrl,
                 pixel_id: pixelId,
                 enable_affiliates: enableAffiliates,
                 affiliate_commission: affiliateCommission,
-                marketplace_visible: true, // Enforced by rule
+                marketplace_visible: false, // 🚀 Se editar o produto, ele volta para análise!
+                status: 'pending',          // 🚀 Volta para análise!
                 sales_page_url: salesPageUrl,
                 checkout_theme: checkoutTheme,
                 is_active: isActive,
@@ -187,7 +189,9 @@ export const updateProduct = async (productId: string, productData: Partial<Prod
                     description,
                     price,
                     image_url: imageUrl,
-                    // Minimal update to not break legacy DB
+                    file_url: downloadUrl,
+                    marketplace_visible: false, // 🚀 FORCE PENDING AQUI
+                    status: 'pending'           // 🚀 FORCE PENDING AQUI
                 };
 
                 const { data: legacyData, error: legacyError } = await supabase

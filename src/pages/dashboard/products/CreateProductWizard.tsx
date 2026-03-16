@@ -29,7 +29,7 @@ export const CreateProductWizard = () => {
             bonuses: [],
             paymentMethods: ['emola', 'mpesa'],
             leadFields: ['name', 'email'],
-            marketplaceVisible: true,
+            marketplaceVisible: false, // 🚀 TRAVA 1: Já nasce invisível
             deliveryType: 'file'
         },
         mode: "onChange"
@@ -72,14 +72,14 @@ export const CreateProductWizard = () => {
                     pixelId: product.pixel_id || "",
                     enableAffiliates: product.enable_affiliates || false,
                     affiliateCommission: product.affiliate_commission || undefined,
-                    marketplaceVisible: product.marketplace_visible ?? true,
+                    marketplaceVisible: false, // 🚀 Mantém invisível até na edição
                     salesPageUrl: product.sales_page_url || "",
                     checkoutTheme: product.checkout_theme || 'classic',
                     isActive: product.is_active,
                     leadFields: product.lead_fields || ['name', 'email'],
                     bonuses: product.bonuses || [],
                     paymentMethods: product.payment_methods || ['emola', 'mpesa'],
-                    mainProductFileUrl: product.download_url || "" // For visual feedback
+                    mainProductFileUrl: product.download_url || "" 
                 });
             }
         } catch (error) {
@@ -93,11 +93,9 @@ export const CreateProductWizard = () => {
     const nextStep = async () => {
         let valid = false;
 
-        // Per-step validation
         if (step === 1) {
             valid = await trigger(["name", "price", "offerPrice", "description", "imageUrl"]);
         } else if (step === 2) {
-            // Main File validation check
             const deliveryType = form.getValues("deliveryType");
             if (deliveryType === 'link') {
                 valid = true;
@@ -128,38 +126,32 @@ export const CreateProductWizard = () => {
                 return;
             }
 
-            // 1. Upload Main File if exists
             let newDownloadUrl = undefined;
             if (mainFile) {
-                // Assuming we use the same image uploader for generic files for this prototype
-                // Real world: use a private bucket for products
                 newDownloadUrl = await uploadProductImage(mainFile);
             }
 
-            // 2. Prepare Data
+            // 🚀 A MÁGICA DE ARQUITETO: Forçamos o status 'pending' e invisível
             const finalData = {
                 ...data,
-                // Only overwrite if we have a new URL, otherwise keep existing
                 ...(newDownloadUrl ? { downloadUrl: newDownloadUrl } : {}),
-                // Note: Bonus files in step 3 are just placeholders in this UI prototype
-                // We would upload them here too iterating over data.bonuses
+                status: 'pending',           // 🟡 Obriga a ir para a fila de aprovação
+                marketplaceVisible: false,   // 🟡 Esconde da loja principal
+                marketplace_visible: false   // 🟡 Garantia dupla para o banco de dados
             };
 
-            // 3. Create or Update Product
             if (isEditMode && id) {
                 await updateProduct(id, finalData);
-                alert("Produto atualizado com sucesso!");
+                alert("Produto atualizado e enviado para reanálise da administração!");
             } else {
                 await createProduct(finalData, userId);
-                alert("Produto criado com sucesso!");
+                alert("Produto enviado para análise! Assim que a nossa equipe aprovar, ele estará disponível para venda no Marketplace.");
             }
 
-            // Redirect to products list
             navigate('/dashboard/products');
 
         } catch (error: any) {
             console.error("Error saving product:", error);
-            // Alert is already reliable enough for general errors, but let's be safe
             alert("Erro ao salvar produto: " + (error.message || "Tente novamente."));
         } finally {
             setIsLoading(false);
@@ -168,7 +160,6 @@ export const CreateProductWizard = () => {
 
     return (
         <div className="max-w-4xl mx-auto py-8 px-4">
-            {/* Header / Stepper Progress */}
             <div className="mb-8">
                 <div className="flex items-center justify-between mb-4">
                     <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
@@ -185,14 +176,7 @@ export const CreateProductWizard = () => {
                 </div>
             </div>
 
-            {/* Step Content */}
-            <form onSubmit={handleSubmit(onSubmit as any, (errors) => {
-                console.error("Validation Errors:", errors);
-                const errorMessages = Object.entries(errors)
-                    .map(([key, err]: [string, any]) => `${key}: ${err?.message || 'Erro desconhecido'}`)
-                    .join("\n");
-                alert("Erro de validação:\n" + errorMessages);
-            })}>
+            <form onSubmit={handleSubmit(onSubmit as any)}>
                 <div className="min-h-[400px]">
                     {step === 1 && <StepInfo key="step1" form={form} />}
                     {step === 2 && <StepMainProduct key="step2" form={form} onFileSelect={setMainFile} selectedFile={mainFile} />}
@@ -201,7 +185,6 @@ export const CreateProductWizard = () => {
                     {step === 5 && <StepReview key="step5" form={form} mainFile={mainFile} />}
                 </div>
 
-                {/* Footer Navigation */}
                 <div className="flex items-center justify-between mt-8 pt-6 border-t">
                     <Button
                         type="button"
@@ -217,8 +200,8 @@ export const CreateProductWizard = () => {
                             Próximo <ArrowRight className="w-4 h-4" />
                         </Button>
                     ) : (
-                        <Button type="submit" className="gap-2 bg-green-600 hover:bg-green-700" disabled={isLoading}>
-                            {isLoading ? "Publicando..." : "Publicar Produto"} <Save className="w-4 h-4" />
+                        <Button type="submit" className="gap-2 bg-amber-600 hover:bg-amber-700 shadow-[0_0_15px_rgba(217,119,6,0.3)] text-white font-bold" disabled={isLoading}>
+                            {isLoading ? "Enviando para análise..." : "ENVIAR PARA APROVAÇÃO"} <Save className="w-4 h-4" />
                         </Button>
                     )}
                 </div>

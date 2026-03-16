@@ -1,10 +1,20 @@
-import { MessageCircle, Mail, Smartphone, Globe, Save, Loader2 } from "lucide-react";
+import { MessageCircle, Mail, Smartphone, Globe, Save, Loader2, Activity } from "lucide-react";
 import { useState, useEffect } from "react";
 import { Button, Input, Label } from "../../components/ui/Primitives";
 import { getIntegration, saveIntegration } from "../../lib/api/integrations";
 import { useNavigate } from "react-router-dom";
+import RastroMozIntegration from "../../components/integrations/RastroMozIntegration";
 
 const tools = [
+    {
+        id: "rastromoz",
+        icon: Activity,
+        title: "Rastroy Inteligente",
+        description: "Rastreamento S2S (Server-to-Server), Atribuição Multicanal e Pixel Anti-iOS 14.",
+        color: "text-[#00ff9d]",
+        bg: "bg-[#00ff9d]/10",
+        comingSoon: false
+    },
     {
         id: "whatsapp",
         icon: MessageCircle,
@@ -59,8 +69,15 @@ export const ToolsPage = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
 
+    const [isRastroyIntegrated, setIsRastroyIntegrated] = useState(false);
+
     // Fetch existing token when modal opens
     useEffect(() => {
+        // Check Rastroy Status
+        getIntegration('rastromoz').then(data => {
+            if (data?.api_token) setIsRastroyIntegrated(true);
+        });
+
         if (selectedTool === 'utmify') {
             setIsLoading(true);
             getIntegration('utmify')
@@ -127,14 +144,42 @@ export const ToolsPage = () => {
                                 {tool.description}
                             </p>
                             {!tool.comingSoon && (
-                                <button className="text-sm font-medium text-primary hover:underline pt-2">
-                                    Configurar &rarr;
+                                <button className={`text-sm font-medium hover:underline pt-2 ${tool.id === 'rastromoz' && isRastroyIntegrated
+                                    ? "text-green-500 font-bold no-underline hover:no-underline cursor-default flex items-center gap-1"
+                                    : "text-primary"
+                                    }`}>
+                                    {tool.id === 'rastromoz' && isRastroyIntegrated ? (
+                                        <>
+                                            <span className="relative flex h-2 w-2 mr-1">
+                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                            </span>
+                                            Integrado
+                                        </>
+                                    ) : (
+                                        <>Configurar &rarr;</>
+                                    )}
                                 </button>
                             )}
                         </div>
                     </div>
                 ))}
             </div>
+
+            {/* RastroMoz Modal */}
+            {selectedTool === 'rastromoz' && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in">
+                    <div className="w-full max-w-xl animate-in zoom-in-95 relative">
+                        <button
+                            onClick={() => setSelectedTool(null)}
+                            className="absolute -top-10 right-0 text-white/50 hover:text-white"
+                        >
+                            Fechar [ESC]
+                        </button>
+                        <RastroMozIntegration />
+                    </div>
+                </div>
+            )}
 
             {/* UTMify Config Modal */}
             {selectedTool === 'utmify' && (

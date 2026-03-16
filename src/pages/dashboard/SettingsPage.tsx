@@ -20,14 +20,21 @@ export const SettingsPage = () => {
 
     const fetchProfile = async () => {
         try {
-            const { data: { user } } = await supabase.auth.getUser();
-            if (user) {
-                setUser(user);
-                setFullName(user.user_metadata?.full_name || "");
-                setAvatarUrl(user.user_metadata?.avatar_url || "");
+            const { data, error } = await supabase.auth.getUser();
+
+            if (error) {
+                console.error("Error fetching profile:", error);
+                toast.error("Erro ao buscar perfil. Tente fazer login novamente.");
+                return;
+            }
+
+            if (data?.user) {
+                setUser(data.user);
+                setFullName(data.user.user_metadata?.full_name || "");
+                setAvatarUrl(data.user.user_metadata?.avatar_url || "");
             }
         } catch (error) {
-            console.error("Error fetching profile:", error);
+            console.error("Unexpected error fetching profile:", error);
         } finally {
             setLoading(false);
         }

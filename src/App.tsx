@@ -8,6 +8,7 @@ import { PublicMarketplacePage } from "./pages/public/PublicMarketplacePage";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 import { CheckoutPage } from "./pages/public/CheckoutPage";
 import { CheckoutSuccessPage } from "./pages/public/CheckoutSuccessPage";
+import { AdminPage } from "./pages/dashboard/AdminPage";
 
 import { DashboardLayout } from "./layouts/DashboardLayout";
 import { OverviewPage } from "./pages/dashboard/OverviewPage";
@@ -24,6 +25,8 @@ import { ProductViewer } from "./pages/dashboard/library/ProductViewer";
 import { SettingsPage } from "./pages/dashboard/SettingsPage";
 import { ErrorBoundary } from "./components/ErrorBoundary";
 import { UTMTracker } from "./components/analytics/UTMTracker";
+import { RastroCapture } from "./components/tracking/RastroCapture"; // Importe o componente
+import { NewClientsPage } from "./pages/dashboard/NewClientsPage";
 import "./index.css";
 
 import { Toaster } from "sonner"; // Import Toaster
@@ -38,6 +41,7 @@ function App() {
         <Router>
           <ThemeSwitcher /> {/* Floating Global Switcher */}
           <UTMTracker />
+          <RastroCapture /> {/* 2. Injete aqui. Ele roda silenciosamente em background. */}
           <Toaster richColors position="top-right" />
           <Routes>
             <Route path="/" element={<LandingPage />} />
@@ -49,6 +53,9 @@ function App() {
             <Route path="/checkout/:productId" element={<CheckoutPage />} />
             <Route path="/checkout/:productId/success" element={<CheckoutSuccessPage />} />
 
+            {/* 🚀 A NOVA ROTA DO ADMIN AQUI */}
+            <Route path="/admin" element={<AdminPage />} />
+
             {/* Dashboard Routes */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
@@ -57,6 +64,7 @@ function App() {
             }>
               <Route index element={<OverviewPage />} />
               <Route path="transactions" element={<TransactionsPage />} />
+              <Route path="clients" element={<NewClientsPage />} />
               <Route path="products" element={<ProductsPage />} />
               <Route path="products/new" element={<CreateProductWizard />} />
               <Route path="products/edit/:id" element={<CreateProductWizard />} />

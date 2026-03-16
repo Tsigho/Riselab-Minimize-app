@@ -1,13 +1,14 @@
 import { useState, useEffect } from "react";
 import { Plus, Search, Filter, Loader2, Trash } from "lucide-react";
-import { Button, Input } from "../../components/ui/Primitives";
-import { Link } from "react-router-dom";
+import { Button, Input, Badge } from "../../components/ui/Primitives";
+import { Link, useNavigate } from "react-router-dom";
 import { supabase } from "../../lib/supabase";
 import { deleteProduct } from "../../lib/api/products";
 
 export const ProductsPage = () => {
     const [products, setProducts] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
 
     useEffect(() => {
         fetchProducts();
@@ -106,8 +107,23 @@ export const ProductsPage = () => {
                                     </div>
                                 )}
 
-                                <div className="absolute top-2 right-2 bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full border border-white/10">
-                                    0 Vendas
+                                <div className="absolute top-2 right-2 flex items-center gap-2">
+                                    <div className="bg-black/60 backdrop-blur-sm text-white text-xs px-2 py-1 rounded-full border border-white/10">
+                                        0 Vendas
+                                    </div>
+                                    <button
+                                        className="bg-red-500/80 hover:bg-red-600 text-white p-1.5 rounded-full backdrop-blur-sm"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            if (confirm("Tem certeza que deseja excluir este produto?")) {
+                                                handleDelete(product.id);
+                                            }
+                                        }}
+                                        title="Excluir"
+                                    >
+                                        <Trash className="w-4 h-4" />
+                                    </button>
                                 </div>
                             </div>
 
@@ -124,36 +140,40 @@ export const ProductsPage = () => {
                                     </div>
                                 </div>
 
-                                <div className="mt-auto flex items-center gap-2 text-xs text-muted-foreground">
-                                    <span className={`w-2 h-2 rounded-full ${product.is_active ? 'bg-green-500' : 'bg-yellow-500'}`} />
-                                    {product.is_active ? 'Ativo' : 'Rascunho'}
-                                    {product.enable_affiliates && (
-                                        <span className="ml-auto text-blue-500 font-medium bg-blue-500/10 px-1.5 py-0.5 rounded">Afiliados {product.affiliate_commission}%</span>
+                                <div className="mt-4 pt-4 border-t border-white/5">
+                                    {product.status === 'approved' ? (
+                                        <div className="flex flex-col gap-2">
+                                            <Badge className="bg-green-500/20 text-green-400 w-fit">🟢 Aprovado</Badge>
+                                            <Button 
+                                                size="sm" 
+                                                variant="outline" 
+                                                onClick={() => window.open(`${window.location.origin}/checkout/${product.id}`, '_blank')}
+                                            >
+                                                🔗 Ver Link de Venda
+                                            </Button>
+                                        </div>
+                                    ) : product.status === 'rejected' ? (
+                                        <div className="flex flex-col gap-2">
+                                            <Badge className="bg-red-500/20 text-red-400 w-fit mb-1">🔴 Rejeitado (Veja Recomendações)</Badge>
+                                            {product.admin_feedback && (
+                                                <div className="text-xs text-red-300 bg-red-500/10 p-2 rounded mb-1">{product.admin_feedback}</div>
+                                            )}
+                                            <Button size="sm" onClick={() => navigate(`/dashboard/products/edit/${product.id}`)}>
+                                                ✏️ Corrigir Produto
+                                            </Button>
+                                        </div>
+                                    ) : (
+                                        <div className="flex flex-col gap-2">
+                                            <Badge className="bg-amber-500/20 text-amber-400 w-fit">🟡 Aguardando Aprovação</Badge>
+                                            <Button size="sm" variant="ghost" disabled>
+                                                Link será gerado após aprovação
+                                            </Button>
+                                            <Button size="sm" variant="outline" onClick={() => navigate(`/dashboard/products/edit/${product.id}`)}>
+                                                ✏️ Editar Detalhes
+                                            </Button>
+                                        </div>
                                     )}
                                 </div>
-                            </div>
-
-                            {/* Hover Action */}
-                            <div className="absolute inset-x-0 bottom-0 p-4 bg-gradient-to-t from-black/80 to-transparent translate-y-full group-hover:translate-y-0 transition-transform flex gap-2">
-                                <Link to={`/dashboard/products/edit/${product.id}`} className="w-full">
-                                    <Button size="sm" className="w-full bg-white text-black hover:bg-white/90 font-medium shadow-lg">Editar</Button>
-                                </Link>
-                                <Button
-                                    size="sm"
-                                    variant="destructive"
-                                    className="w-12 bg-red-500/80 hover:bg-red-600 text-white backdrop-blur-sm"
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        if (confirm("Tem certeza que deseja excluir este produto?")) {
-                                            handleDelete(product.id);
-                                        }
-                                    }}
-                                >
-                                    <Trash className="w-4 h-4" />
-                                </Button>
-                                <Link to={`/checkout/${product.id}`} className="w-full">
-                                    <Button size="sm" variant="outline" className="w-full border-white/30 text-white hover:bg-white/20 font-medium backdrop-blur-sm">Ver</Button>
-                                </Link>
                             </div>
                         </div>
                     ))}

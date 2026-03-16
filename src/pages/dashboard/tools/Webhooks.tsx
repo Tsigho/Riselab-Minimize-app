@@ -4,6 +4,7 @@ import { supabase } from "../../../lib/supabase";
 import { Button, Input } from "../../../components/ui/Primitives";
 import { Plus, Trash, Globe, Zap, Activity, X } from "lucide-react";
 import { toast } from "sonner";
+import { minimizigFetch } from "../../../lib/api-client";
 
 export function WebhooksPage() {
     const [webhooks, setWebhooks] = useState<any[]>([]);
@@ -72,10 +73,10 @@ export function WebhooksPage() {
     async function testWebhook(webhook: any) {
         toast.info(`Simulando disparo para ${webhook.name}...`);
         try {
-            await fetch(webhook.url, {
+            await minimizigFetch(webhook.url, {
                 method: 'POST',
-                mode: 'no-cors',
-                headers: { 'Content-Type': 'application/json' },
+                // mode: 'no-cors', // minimizigFetch uses standard fetch which supports cors. Remove no-cors to allowing error handling.
+                // headers are added by default in minimizigFetch
                 body: JSON.stringify({
                     event: 'test_ping',
                     message: 'Isso é um teste do Minimizing App',

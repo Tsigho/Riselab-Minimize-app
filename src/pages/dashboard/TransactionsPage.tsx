@@ -1,15 +1,35 @@
-
-import { Search, Download, Filter } from "lucide-react";
-
-const transactions = [
-    { ref: "RISETSIGHO001", date: "12/01/2026", role: "Vendedor", gross: 5000, fee: 250, net: 4750, status: "Concluído", utm_source: "facebook", utm_campaign: "lancamento_jan" },
-    { ref: "RISETSIGHO002", date: "12/01/2026", role: "Afilhado", gross: 1200, fee: 60, net: 1140, status: "Pendente", utm_source: "instagram" },
-    { ref: "RISETSIGHO003", date: "11/01/2026", role: "Vendedor", gross: 850, fee: 42.5, net: 807.5, status: "Falhou", utm_source: "google" },
-    { ref: "RISETSIGHO004", date: "10/01/2026", role: "Vendedor", gross: 15000, fee: 750, net: 14250, status: "Concluído" },
-    { ref: "RISETSIGHO005", date: "09/01/2026", role: "Afilhado", gross: 300, fee: 15, net: 285, status: "Concluído", utm_source: "email_list" },
-];
+import { useState, useEffect } from "react";
+import { Search, Download, Filter, User, Mail, Phone, Calendar, ShoppingBag } from "lucide-react";
+import { supabase } from "../../lib/supabase";
+import { Badge } from "../../components/ui/Primitives";
 
 export const TransactionsPage = () => {
+    const [sales, setSales] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        fetchSales();
+    }, []);
+
+    const fetchSales = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data, error } = await supabase
+                .from('sales')
+                .select('*, products(name)')
+                .eq('seller_id', user.id)
+                .order('created_at', { ascending: false });
+                
+            if (error) throw error;
+            if (data) setSales(data);
+        } catch (error) {
+            console.error("Erro ao buscar vendas:", error);
+        } finally {
+            setLoading(false);
+        }
+    };
     return (
         <div className="space-y-6">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -39,59 +59,104 @@ export const TransactionsPage = () => {
                 </div>
 
                 <div className="overflow-x-auto">
-                    <table className="w-full text-sm text-left">
-                        <thead className="bg-muted/50 text-muted-foreground font-medium">
+                    <table className="w-full text-left text-sm">
+                        <thead className="bg-white/5 text-slate-400">
                             <tr>
-                                <th className="px-6 py-4">Referência</th>
-                                <th className="px-6 py-4">Data</th>
-                                <th className="px-6 py-4">Origem</th>
-                                <th className="px-6 py-4">Função</th>
-                                <th className="px-6 py-4 text-right">Valor Bruto</th>
-                                <th className="px-6 py-4 text-right">Taxa (App)</th>
-                                <th className="px-6 py-4 text-right">A Receber</th>
-                                <th className="px-6 py-4 text-center">Status</th>
+                                <th className="p-4 rounded-tl-lg font-medium">Data da Compra</th>
+                                <th className="p-4 font-medium">Dados do Cliente</th>
+                                <th className="p-4 font-medium">Contato</th>
+                                <th className="p-4 font-medium">Produto</th>
+                                <th className="p-4 font-medium">Status</th>
+                                <th className="p-4 rounded-tr-lg text-right font-medium">Seu Ganho Líquido</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-border">
-                            {transactions.map((tx: any) => (
-                                <tr key={tx.ref} className="hover:bg-muted/50 transition-colors">
-                                    <td className="px-6 py-4 font-mono text-xs">{tx.ref}</td>
-                                    <td className="px-6 py-4">{tx.date}</td>
-                                    <td className="px-6 py-4">
-                                        {tx.utm_source ? (
-                                            <div className="flex items-center gap-2" title={`Campanha: ${tx.utm_campaign || 'N/A'}`}>
-                                                {tx.utm_source === 'facebook' && <span className="text-blue-600 bg-blue-100 p-1 rounded-sm text-xs font-bold">FB</span>}
-                                                {tx.utm_source === 'instagram' && <span className="text-pink-600 bg-pink-100 p-1 rounded-sm text-xs font-bold">IG</span>}
-                                                {tx.utm_source === 'google' && <span className="text-red-500 bg-red-100 p-1 rounded-sm text-xs font-bold">G</span>}
-                                                <span className="text-xs text-muted-foreground capitalize">{tx.utm_source}</span>
-                                            </div>
+                        <tbody>
+                            {sales.map((sale) => (
+                                <tr key={sale.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                                    {/* DATA */}
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2 text-slate-300">
+                                            <Calendar className="w-4 h-4 text-slate-500" />
+                                            {new Date(sale.created_at).toLocaleDateString('pt-MZ')}
+                                        </div>
+                                        <div className="text-xs text-slate-500 ml-6">
+                                            {new Date(sale.created_at).toLocaleTimeString('pt-MZ', { hour: '2-digit', minute: '2-digit' })}
+                                        </div>
+                                    </td>
+
+                                    {/* NOME E EMAIL DO CLIENTE */}
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2 text-white font-medium">
+                                            <User className="w-4 h-4 text-primary" />
+                                            {sale.customer_name || 'Desconhecido'}
+                                        </div>
+                                        <div className="flex items-center gap-2 text-xs text-slate-400 mt-1 ml-6">
+                                            <Mail className="w-3 h-3" />
+                                            {sale.customer_email || 'N/A'}
+                                        </div>
+                                    </td>
+
+                                    {/* NÚMERO DE TELEFONE */}
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2 text-slate-300">
+                                            <Phone className="w-4 h-4 text-green-500" />
+                                            {sale.customer_phone || 'N/A'}
+                                        </div>
+                                    </td>
+
+                                    {/* PRODUTO */}
+                                    <td className="p-4">
+                                        <div className="flex items-center gap-2 text-slate-300">
+                                            <ShoppingBag className="w-4 h-4 text-blue-500" />
+                                            <span className="truncate max-w-[150px]" title={sale.products?.name || sale.product_id}>
+                                                {sale.products?.name || (sale.product_id ? String(sale.product_id).substring(0, 8) + '...' : 'N/A')}
+                                            </span>
+                                        </div>
+                                    </td>
+
+                                    {/* STATUS */}
+                                    <td className="p-4">
+                                        {sale.status === 'approved' ? (
+                                            <Badge className="bg-green-500/20 text-green-400 border border-green-500/30">
+                                                🟢 Aprovada
+                                            </Badge>
+                                        ) : sale.status === 'pending' ? (
+                                            <Badge className="bg-amber-500/20 text-amber-400 border border-amber-500/30">
+                                                🟡 Aguardando Pagamento
+                                            </Badge>
                                         ) : (
-                                            <span className="text-xs text-muted-foreground">-</span>
+                                            <Badge className="bg-red-500/20 text-red-400 border border-red-500/30">
+                                                🔴 Cancelada
+                                            </Badge>
                                         )}
                                     </td>
-                                    <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tx.role === "Vendedor" ? "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300" : "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-300"
-                                            }`}>
-                                            {tx.role}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-medium">MT {tx.gross.toLocaleString()}</td>
-                                    <td className="px-6 py-4 text-right text-destructive text-xs">
-                                        - MT {tx.fee.toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-4 text-right font-bold text-green-600 dark:text-green-400">
-                                        MT {tx.net.toLocaleString()}
-                                    </td>
-                                    <td className="px-6 py-4 text-center">
-                                        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${tx.status === "Concluído" ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300" :
-                                            tx.status === "Pendente" ? "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300" :
-                                                "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300"
-                                            }`}>
-                                            {tx.status}
+
+                                    {/* GANHO LÍQUIDO DO VENDEDOR (Os 86%) */}
+                                    <td className="p-4 text-right">
+                                        <span className="text-green-400 font-bold text-base">
+                                            + {Number(sale.seller_net || 0).toFixed(2)} MZN
                                         </span>
                                     </td>
                                 </tr>
                             ))}
+
+                            {/* Caso a lista esteja vazia */}
+                            {sales.length === 0 && !loading && (
+                                <tr>
+                                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                                        Nenhuma venda registrada ainda. Seus clientes aparecerão aqui!
+                                    </td>
+                                </tr>
+                            )}
+                            
+                            {/* Caso esteja carregando */}
+                            {loading && (
+                                <tr>
+                                    <td colSpan={6} className="p-8 text-center text-slate-500">
+                                        Carregando clientes...
+                                    </td>
+                                </tr>
+                            )}
                         </tbody>
                     </table>
                 </div>

@@ -2,16 +2,13 @@ import { useState, useEffect } from "react";
 import { Card, Button, Input, Label, Badge } from "../../components/ui/Primitives";
 import { Wallet, ArrowUpRight, History, AlertCircle, Loader2 } from "lucide-react";
 import { formatCurrency } from "../../lib/utils";
-// import { supabase } from "../../lib/supabase";
+import { supabase } from "../../lib/supabase";
 
 // Mock Data for consistent UI before DB connection or empty state
-const MOCK_WITHDRAWALS = [
-    { id: '1', amount: 5000, method: 'M-Pesa', status: 'paid', date: '2025-10-15', number: '841234567' },
-    { id: '2', amount: 1500, method: 'E-Mola', status: 'pending', date: '2025-10-20', number: '861234567' },
-];
+const MOCK_WITHDRAWALS: any[] = [];
 
 export const FinancialPage = () => {
-    const [balance, setBalance] = useState({ available: 12450, pending: 3200 });
+    const [balance, setBalance] = useState({ available: 0, pending: 0 });
     const [withdrawals, setWithdrawals] = useState(MOCK_WITHDRAWALS);
     const [loading, setLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
@@ -21,15 +18,66 @@ export const FinancialPage = () => {
     const [method, setMethod] = useState("mpesa");
     const [number, setNumber] = useState("");
 
-    // Fetch real data (Placeholder for future hook)
+    // Fetch real data
     useEffect(() => {
-        // fetchWithdrawals();
+        fetchFinancialData();
     }, []);
+
+    const fetchFinancialData = async () => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            // Fetch Approved Sales logic
+            const { data: salesData, error: salesError } = await supabase
+                .from('sales')
+                .select('seller_net')
+                .eq('seller_id', user.id)
+                .eq('status', 'approved');
+
+            const { data: withdrawalsData, error: withdrawalsError } = await supabase
+                .from('withdrawals')
+                .select('amount, status')
+                .eq('vendor_id', user.id);
+
+            if (salesError || withdrawalsError) throw Error("Error fetching data");
+
+            // Compute Total Earned
+            const totalEarned = salesData?.reduce((acc, curr) => acc + (Number(curr.seller_net) || 0), 0) || 0;
+            const totalWithdrawn = withdrawalsData?.reduce((acc, curr) => acc + (Number(curr.amount) || 0), 0) || 0;
+            const computedAvailable = totalEarned - totalWithdrawn;
+
+            setBalance({
+                available: computedAvailable > 0 ? computedAvailable : 0, 
+                pending: 0 // Modify if you track pending withdrawals strictly
+            });
+            // Update UI list for withdrawals
+            // Example mapping: setWithdrawals(withdrawalsData || []);
+        } catch (error) {
+            console.error("Erro ao buscar dados financeiros:", error);
+        }
+    };
 
     const handleWithdraw = async () => {
         setLoading(true);
-        // Simulate API delay
-        setTimeout(() => {
+        try {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) {
+                alert("Usuário não autenticado");
+                return;
+            }
+
+            await supabase.from('withdrawals').insert([{
+                vendor_id: user.id,
+                amount: Number(amount),
+                phone_number: number
+            }]);
+
+            alert("Pedido de saque enviado para a administração!");
+
+            setShowModal(false);
+            setAmount("");
+            
             const newWithdrawal = {
                 id: Math.random().toString(),
                 amount: Number(amount),
@@ -40,10 +88,11 @@ export const FinancialPage = () => {
             };
             setWithdrawals([newWithdrawal as any, ...withdrawals]);
             setBalance(prev => ({ ...prev, pending: prev.pending + Number(amount), available: prev.available - Number(amount) }));
+        } catch (error: any) {
+            alert("Erro ao solicitar saque: " + error.message);
+        } finally {
             setLoading(false);
-            setShowModal(false);
-            setAmount("");
-        }, 1500);
+        }
     };
 
     return (
@@ -93,7 +142,7 @@ export const FinancialPage = () => {
                         </div>
                         <div>
                             <p className="text-sm font-medium text-muted-foreground">Total Sacado</p>
-                            <h3 className="text-2xl font-bold text-foreground">{formatCurrency(50000)}</h3>
+                            <h3 className="text-2xl font-bold text-foreground">{formatCurrency(0)}</h3>
                         </div>
                     </div>
                 </Card>
