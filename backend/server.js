@@ -244,11 +244,11 @@ app.post('/api/pagar-paysuite', async (req, res) => {
         console.log("Enviando para PaySuite:", payloadParaPaySuite);
 
         // Chamada real com os cabeçalhos de segurança corretos
-        const response = await axios.post("https://pay.paysuite.co.mz/api/v1/payments", payloadParaPaySuite, {
+        const response = await axios.post("https://api.paysuite.tech/api/v1/payments", payloadParaPaySuite, {
             headers: {
                 "Authorization": `Bearer ${process.env.PAYSUITE_API_KEY}`,
                 "Content-Type": "application/json",
-                "Accept": "application/json" // <-- Muitas APIs exigem isto!
+                "Accept": "application/json"
             }
         });
 
