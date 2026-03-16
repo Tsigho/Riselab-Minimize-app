@@ -221,11 +221,10 @@ io.on('connection', (socket) => {
 
 const { sendSaleToRastroMoz } = require('./lib/notify-rastromoz');
 
-// 🚀 A ROTA DA PAYSUITE CORRIGIDA (AGORA ELA FORÇA A URL DE RETORNO)
+// 🚀 A ROTA DA PAYSUITE CORRIGIDA E BLINDADA
 app.post('/api/pagar-paysuite', async (req, res) => {
     console.log('Recebido pedido de pagamento:', req.body);
 
-    // Puxa os dados que o frontend enviou
     const { customer_name, customer_email, phone, amount, channel, reference, return_url } = req.body;
 
     // 🛡️ A MÁGICA: Se o frontend esquecer, nós injetamos o return_url à força
@@ -236,18 +235,20 @@ app.post('/api/pagar-paysuite', async (req, res) => {
             customer_name: customer_name,
             customer_email: customer_email || "cliente@minimizing.com",
             phone: phone,
-            amount: amount,
-            channel: channel,
+            amount: Number(amount), // GARANTE que o valor é um número para a API não reclamar
+            channel: channel || "MPESA",
             reference: reference,
-            return_url: safeReturnUrl // O campo obrigatório que faltava
+            return_url: safeReturnUrl
         };
 
-        // Faz a chamada real para a API da PaySuite
-        // NOTA: Certifique-se que no painel do Render tem a variável PAYSUITE_API_KEY
+        console.log("Enviando para PaySuite:", payloadParaPaySuite);
+
+        // Chamada real com os cabeçalhos de segurança corretos
         const response = await axios.post("https://pay.paysuite.co.mz/api/v1/payments", payloadParaPaySuite, {
             headers: {
                 "Authorization": `Bearer ${process.env.PAYSUITE_API_KEY}`,
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Accept": "application/json" // <-- Muitas APIs exigem isto!
             }
         });
 
@@ -255,11 +256,13 @@ app.post('/api/pagar-paysuite', async (req, res) => {
         return res.json({ success: true, data: response.data });
 
     } catch (error) {
-        console.error("Erro na PaySuite:", error.response?.data || error.message);
+        const erroDetalhado = error.response?.data || error.message;
+        console.error("Erro na PaySuite:", erroDetalhado);
+
         return res.status(422).json({
             success: false,
             message: "Erro ao gerar link na PaySuite",
-            details: error.response?.data || error.message
+            details: erroDetalhado
         });
     }
 });
