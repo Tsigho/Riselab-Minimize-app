@@ -3,7 +3,8 @@
 
 <head>
     <meta charset="utf-8" />
-    <title>Checkout - RiseLab</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Checkout RiseLab</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         body {
@@ -11,91 +12,102 @@
             color: white;
             font-family: sans-serif;
         }
+
+        .card {
+            background: #12101b;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
     </style>
 </head>
 
 <body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-[#12101b] p-8 rounded-3xl border border-white/5 shadow-2xl text-center">
-        <h2 id="product-title" class="text-2xl font-bold mb-2">Carregando...</h2>
-        <p id="product-price" class="text-3xl font-black text-green-500 mb-6">... MZN</p>
+    <div class="max-w-md w-full card p-8 rounded-[2rem] shadow-2xl">
+        <div class="w-full h-52 rounded-2xl mb-6 overflow-hidden bg-gray-900 border border-white/5">
+            <img id="p-img" src="" class="w-full h-full object-cover"
+                onerror="this.src='https://via.placeholder.com/400x400?text=RiseLab+Pro'">
+        </div>
 
-        <input id="c-name" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl mb-4 outline-none"
-            placeholder="Nome Completo">
-        <input id="c-email" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl mb-4 outline-none"
-            placeholder="E-mail (Opcional)">
-        <input id="c-phone" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl mb-6 outline-none"
-            placeholder="Número (ex: 841234567)">
+        <h2 id="p-title" class="text-2xl font-bold text-center mb-1">Carregando...</h2>
+        <p id="p-price" class="text-3xl font-black text-[#00ff9d] text-center mb-8">0.00 MZN</p>
+
+        <div class="space-y-4">
+            <input id="c-name" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none"
+                placeholder="Nome Completo">
+            <input id="c-email" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none"
+                placeholder="E-mail">
+            <input id="c-phone" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none"
+                placeholder="Número M-Pesa (ex: 841234567)">
+        </div>
+
+        <div id="bump-area"
+            class="mt-6 p-4 border-2 border-dashed border-[#00ff9d]/20 rounded-2xl bg-[#00ff9d]/5 hidden">
+            <label class="flex items-center cursor-pointer">
+                <input type="checkbox" id="bump-check" class="w-5 h-5 accent-[#00ff9d]">
+                <span id="bump-text" class="ml-3 text-sm font-medium">Adicionar Oferta Especial</span>
+            </label>
+        </div>
 
         <button id="pay-btn"
-            class="w-full py-5 bg-[#00b574] rounded-xl font-bold text-lg hover:brightness-110 transition-all">PAGAR
-            AGORA</button>
+            class="w-full mt-8 py-5 bg-[#00b574] rounded-2xl font-bold text-lg hover:brightness-110 transition-all shadow-lg shadow-green-900/20">
+            PAGAR AGORA
+        </button>
     </div>
 
     <script>
         const params = new URLSearchParams(window.location.search);
         const pName = params.get('produto') || 'Produto RiseLab';
-        const pPrice = params.get('preco') || '0';
+        const pPrice = parseFloat(params.get('preco')) || 0;
+        const pImg = params.get('imagem');
         const pDownload = params.get('download') || '#';
+        const bumpPrice = parseFloat(params.get('bump')) || 0;
 
-        // 🛠️ CORREÇÃO 1: Faltava puxar estas duas variáveis para não dar erro invisível!
-        const pProdId = params.get('prodId') || '001';
-        const pSellerId = params.get('sellerId') || '001';
+        document.getElementById('p-title').innerText = pName;
+        document.getElementById('p-price').innerText = pPrice.toFixed(2) + " MZN";
+        if (pImg) document.getElementById('p-img').src = pImg;
 
-        document.getElementById('product-title').innerText = pName;
-        document.getElementById('product-price').innerText = pPrice + " MZN";
+        if (bumpPrice > 0) {
+            document.getElementById('bump-area').classList.remove('hidden');
+            document.getElementById('bump-text').innerText = `Adicionar Order Bump (+${bumpPrice} MZN)`;
+        }
 
         document.getElementById('pay-btn').addEventListener('click', async () => {
             const btn = document.getElementById('pay-btn');
-            btn.innerText = "GERANDO PAGAMENTO...";
+            const nome = document.getElementById('c-name').value;
+            const phone = document.getElementById('c-phone').value.replace(/\D/g, '');
+
+            if (!nome || phone.length < 9) return alert("Por favor, preencha nome e telefone.");
+
+            btn.innerText = "GERANDO LINK...";
             btn.disabled = true;
 
-            // Puxando os dados dos inputs
-            const nome = document.getElementById('c-name').value || "Cliente Expresso";
-            const email = document.getElementById('c-email').value || "cliente@riselab.com";
-            const telefoneLimpo = document.getElementById('c-phone').value.replace(/\D/g, '');
-
-            // Validação rápida para evitar o erro 422 de telefone curto
-            if (telefoneLimpo.length < 9) {
-                alert("Por favor, introduza um número de telemóvel válido (ex: 841234567).");
-                btn.innerText = "PAGAR AGORA";
-                btn.disabled = false;
-                return;
-            }
+            let total = pPrice;
+            if (document.getElementById('bump-check').checked) total += bumpPrice;
 
             try {
-                // 🎯 O RETURN URL AGORA ESTÁ 100% BLINDADO
-                const returnUrl = `${window.location.origin}/checkout-success?link=${encodeURIComponent(pDownload)}&price=${pPrice}&prodId=${pProdId}&sellerId=${pSellerId}`;
-
-                // ⚠️ ATENÇÃO: Troque a URL abaixo se o seu Render tiver um nome diferente
                 const res = await fetch('https://riselab-minimize-oficial.onrender.com/api/pagar-paysuite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         customer_name: nome,
-                        customer_email: email,
-                        phone: "258" + telefoneLimpo,
-                        amount: parseFloat(pPrice),
-                        channel: "MPESA", // 🛠️ CORREÇÃO 2: A PaySuite precisa saber o canal!
+                        customer_email: document.getElementById('c-email').value,
+                        phone: "258" + phone,
+                        amount: total,
                         reference: "RISE" + Date.now(),
-                        return_url: returnUrl
+                        return_url: window.location.origin + "/checkout-success.html?link=" + encodeURIComponent(pDownload)
                     })
                 });
 
                 const result = await res.json();
-                const resultString = JSON.stringify(result);
-                const linkMatch = resultString.match(/https?:\/\/[^"'\s]*paysuite[^"'\s]*/);
-
-                if (linkMatch) {
-                    window.location.href = linkMatch[0].replace(/\\/g, '');
+                if (result.success && result.url) {
+                    // 🚀 O REDIRECIONAMENTO MÁGICO PARA A PAYSUITE
+                    window.location.href = result.url;
                 } else {
-                    console.error("Fofoca da PaySuite:", result);
-                    alert("Erro ao gerar pagamento. Verifique o número introduzido.");
+                    alert("Erro ao gerar link. Tente novamente.");
                     btn.disabled = false;
-                    btn.innerText = "TENTAR NOVAMENTE";
+                    btn.innerText = "PAGAR AGORA";
                 }
             } catch (e) {
-                console.error("Erro de conexão:", e);
-                alert("Erro de conexão com o Servidor Render.");
+                alert("Erro de conexão.");
                 btn.disabled = false;
                 btn.innerText = "PAGAR AGORA";
             }
