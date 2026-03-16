@@ -67,7 +67,7 @@
                 const returnUrl = `${window.location.origin}/checkout-success?link=${encodeURIComponent(pDownload)}&price=${pPrice}&prodId=${pProdId}&sellerId=${pSellerId}`;
 
                 // ⚠️ ATENÇÃO: Troque a URL abaixo se o seu Render tiver um nome diferente
-                const res = await fetch('https://riselab-backend-oficial.onrender.com/api/pagar-paysuite', {
+                const res = await fetch('https://riselab-minimize-oficial.onrender.com/api/pagar-paysuite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
