@@ -49,49 +49,30 @@ async function connectToWhatsApp(socket = null) {
             if (msg.key.fromMe) continue;
             const text = msg.message?.conversation || msg.message?.extendedTextMessage?.text || "";
             if (!text) continue;
-
             try {
                 const respondeuManual = await handleAutomation(sock, msg, text);
-                if (!respondeuManual) {
-                    await handleAIResponse(sock, msg, text);
-                }
-            } catch (error) {
-                console.error('❌ ERRO AO PROCESSAR MENSAGEM:', error);
-            }
+                if (!respondeuManual) { await handleAIResponse(sock, msg, text); }
+            } catch (error) { console.error('❌ ERRO WA:', error); }
         }
     });
 
     sock.ev.on('connection.update', (update) => {
         const { connection, qr } = update;
-        if (qr) {
-            console.log('\n⚡ ESCANEIE O QR CODE ABAIXO ⚡\n');
-            qrcode.generate(qr, { small: true });
-            io.emit('qr', qr);
-        }
-        if (connection === 'close') {
-            setTimeout(connectToWhatsApp, 2000);
-        } else if (connection === 'open') {
-            console.log('✅ BOT ONLINE!');
-            io.emit('connection_status', 'connected');
-        }
+        if (qr) { qrcode.generate(qr, { small: true }); io.emit('qr', qr); }
+        if (connection === 'close') { setTimeout(connectToWhatsApp, 2000); }
+        else if (connection === 'open') { console.log('✅ BOT ONLINE!'); io.emit('connection_status', 'connected'); }
     });
-
     sock.ev.on('creds.update', saveCreds);
 }
 
-// IA E AUTOMAÇÃO (Mantidos conforme seu original)
+// IA E AUTOMAÇÃO
 async function handleAIResponse(sock, msg, userText) {
     const remoteJid = msg.key.remoteJid;
     const { data: products } = await supabase.from('products').select('*').eq('is_active', true).limit(10);
-
     let catalogoTexto = products?.map(p => `- 🏷️ ${p.title} | 💰 ${p.price} MT`).join('\n') || "Estoque vazio.";
-
     try {
         const completion = await groq.chat.completions.create({
-            messages: [
-                { role: "system", content: `Você é o Vendedor do Minimizing. Use este estoque: ${catalogoTexto}` },
-                { role: "user", content: userText }
-            ],
+            messages: [{ role: "system", content: `Vendedor Minimizing. Estoque: ${catalogoTexto}` }, { role: "user", content: userText }],
             model: "llama-3.3-70b-versatile",
         });
         await sock.sendMessage(remoteJid, { text: completion.choices[0]?.message?.content }, { quoted: msg });
@@ -111,52 +92,65 @@ async function handleAutomation(sock, msg, userText) {
 
 connectToWhatsApp();
 
-// 🚀 A ROTA DA PAYSUITE PARA GERAR LINK DE CHECKOUT (CORRIGIDA)
+// 🚀 ROTA PAYSUITE BLINDADA (GERA O LINK E RETORNA PARA O SALTO)
 app.post('/api/pagar-paysuite', async (req, res) => {
-    console.log('Recebido pedido de link de checkout:', req.body);
+    console.log('--- NOVO PEDIDO DE PAGAMENTO RECEBIDO ---');
     const { customer_name, customer_email, phone, amount, reference, return_url } = req.body;
+
+    // 🛡️ TRATAMENTO DE DADOS (IMPEDE O ERRO 422)
+    let cleanPhone = phone ? phone.replace(/\D/g, '') : ""; // Remove tudo que não é número
+    if (cleanPhone.length === 9) cleanPhone = '258' + cleanPhone; // Adiciona o código do país se faltar
 
     try {
         const payloadParaPaySuite = {
-            customer_name,
+            customer_name: customer_name || "Cliente RiseLab",
             customer_email: customer_email || "cliente@minimizing.com",
-            phone,
-            amount: Number(amount),
-            reference,
+            phone: cleanPhone,
+            amount: Number(amount), // Garante que é número
+            reference: reference || "RISE" + Date.now(),
             currency: "MZN",
             return_url: return_url || "https://riselab-minimize-app.vercel.app/checkout-success.html",
-            cancel_url: "https://riselab-minimize-app.vercel.app/checkout.html"
+            cancel_url: "https://riselab-minimize-app.vercel.app/"
         };
 
-        // 🎯 Endpoint de CHECKOUT para gerar a página da PaySuite
-        const response = await axios.post("https://api.paysuite.co.mz/v1/payments", payloadParaPaySuite, {
+        console.log("Enviando Payload:", payloadParaPaySuite);
+
+        // 🎯 Chamada para o Endpoint de Checkout
+        const response = await axios.post("https://api.paysuite.co.mz/v1/checkout", payloadParaPaySuite, {
             headers: {
                 "Authorization": `Bearer ${process.env.PAYSUITE_API_KEY}`,
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Accept": "application/json"
             }
         });
 
-        console.log("Link gerado com sucesso!");
-        // A API de checkout geralmente retorna a URL em data.payment_url ou data.url
-        const paymentUrl = response.data.payment_url || response.data.url || response.data.data?.url;
+        // Tenta pegar a URL de todas as formas que a PaySuite costuma enviar
+        const paymentUrl = response.data.url || response.data.payment_url || response.data.data?.url;
 
-        return res.json({ success: true, url: paymentUrl });
+        if (paymentUrl) {
+            console.log("✅ Link Gerado com Sucesso!");
+            return res.json({ success: true, url: paymentUrl });
+        } else {
+            console.error("❌ Resposta sem URL:", response.data);
+            return res.status(422).json({ success: false, details: "URL não encontrada na resposta." });
+        }
 
     } catch (error) {
         const erroDetalhado = error.response?.data || error.message;
-        console.error("Erro na PaySuite Checkout:", erroDetalhado);
+        console.error("❌ Erro na PaySuite:", JSON.stringify(erroDetalhado));
         return res.status(422).json({ success: false, details: erroDetalhado });
     }
 });
 
-// WEBHOOK E PORTA (Mantidos conforme seu original)
+// WEBHOOK
 app.post('/webhook/payment', async (req, res) => {
     const { reference, status } = req.body;
+    console.log('🔹 Webhook Recebido:', reference, status);
     if (status === 'completed' || status === 'paid') {
         await supabase.from('purchases').update({ status: 'paid' }).eq('transaction_ref', reference);
     }
     return res.status(200).json({ received: true });
 });
 
-const PORT = 3001;
+const PORT = process.env.PORT || 3001;
 server.listen(PORT, () => console.log(`Gateway running on ${PORT}`));

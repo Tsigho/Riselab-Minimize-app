@@ -17,6 +17,11 @@
             background: #12101b;
             border: 1px solid rgba(255, 255, 255, 0.05);
         }
+
+        /* Efeito de brilho no botão */
+        #pay-btn:not(:disabled):hover {
+            box-shadow: 0 0 20px rgba(0, 181, 116, 0.4);
+        }
     </style>
 </head>
 
@@ -31,26 +36,35 @@
         <p id="p-price" class="text-3xl font-black text-[#00ff9d] text-center mb-8">0.00 MZN</p>
 
         <div class="space-y-4">
-            <input id="c-name" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none"
+            <input id="c-name"
+                class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-[#00ff9d]/50 transition-all"
                 placeholder="Nome Completo">
-            <input id="c-email" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none"
+            <input id="c-email"
+                class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-[#00ff9d]/50 transition-all"
                 placeholder="E-mail">
-            <input id="c-phone" class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none"
-                placeholder="Número M-Pesa (ex: 841234567)">
+            <div class="relative">
+                <span class="absolute left-4 top-4 text-gray-500">+258</span>
+                <input id="c-phone"
+                    class="w-full bg-white/5 border border-white/10 p-4 pl-16 rounded-xl outline-none focus:border-[#00ff9d]/50 transition-all"
+                    placeholder="Número (ex: 841234567)">
+            </div>
         </div>
 
         <div id="bump-area"
-            class="mt-6 p-4 border-2 border-dashed border-[#00ff9d]/20 rounded-2xl bg-[#00ff9d]/5 hidden">
+            class="mt-6 p-4 border-2 border-dashed border-[#00ff9d]/20 rounded-2xl bg-[#00ff9d]/5 hidden transition-all">
             <label class="flex items-center cursor-pointer">
                 <input type="checkbox" id="bump-check" class="w-5 h-5 accent-[#00ff9d]">
-                <span id="bump-text" class="ml-3 text-sm font-medium">Adicionar Oferta Especial</span>
+                <span id="bump-text" class="ml-3 text-sm font-medium text-gray-300">Adicionar Oferta Especial</span>
             </label>
         </div>
 
         <button id="pay-btn"
-            class="w-full mt-8 py-5 bg-[#00b574] rounded-2xl font-bold text-lg hover:brightness-110 transition-all shadow-lg shadow-green-900/20">
+            class="w-full mt-8 py-5 bg-[#00b574] rounded-2xl font-bold text-lg hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
             PAGAR AGORA
         </button>
+
+        <p class="text-center text-[10px] text-gray-500 mt-6 uppercase tracking-widest">Pagamento Seguro via PaySuite
+        </p>
     </div>
 
     <script>
@@ -73,24 +87,28 @@
         document.getElementById('pay-btn').addEventListener('click', async () => {
             const btn = document.getElementById('pay-btn');
             const nome = document.getElementById('c-name').value;
+            const email = document.getElementById('c-email').value;
             const phone = document.getElementById('c-phone').value.replace(/\D/g, '');
 
-            if (!nome || phone.length < 9) return alert("Por favor, preencha nome e telefone.");
+            if (!nome || phone.length < 9) {
+                return alert("Por favor, preencha o seu nome e um número de telefone válido!");
+            }
 
-            btn.innerText = "GERANDO LINK...";
+            btn.innerText = "REDIRECIONANDO...";
             btn.disabled = true;
 
             let total = pPrice;
             if (document.getElementById('bump-check').checked) total += bumpPrice;
 
             try {
+                // Chamada ao nosso servidor no Render
                 const res = await fetch('https://riselab-minimize-oficial.onrender.com/api/pagar-paysuite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         customer_name: nome,
-                        customer_email: document.getElementById('c-email').value,
-                        phone: "258" + phone,
+                        customer_email: email,
+                        phone: phone, // O backend já cuida de colocar o 258
                         amount: total,
                         reference: "RISE" + Date.now(),
                         return_url: window.location.origin + "/checkout-success.html?link=" + encodeURIComponent(pDownload)
@@ -98,16 +116,19 @@
                 });
 
                 const result = await res.json();
+
                 if (result.success && result.url) {
-                    // 🚀 O REDIRECIONAMENTO MÁGICO PARA A PAYSUITE
+                    // 🚀 O SALTO PARA A PÁGINA DE PAGAMENTO
                     window.location.href = result.url;
                 } else {
-                    alert("Erro ao gerar link. Tente novamente.");
+                    console.error("Fofoca detalhada:", result.details);
+                    alert("Erro ao processar: " + (result.details?.message || "Tente novamente ou use outro número."));
                     btn.disabled = false;
                     btn.innerText = "PAGAR AGORA";
                 }
             } catch (e) {
-                alert("Erro de conexão.");
+                console.error("Erro de conexão:", e);
+                alert("Erro de conexão com o servidor. Verifique sua internet.");
                 btn.disabled = false;
                 btn.innerText = "PAGAR AGORA";
             }
