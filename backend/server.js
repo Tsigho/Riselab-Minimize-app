@@ -129,11 +129,10 @@ app.post('/api/pagar-paysuite', async (req, res) => {
         };
 
         // 🎯 Endpoint de CHECKOUT para gerar a página da PaySuite
-        const response = await axios.post("https://api.paysuite.co.mz/v1/checkout", payloadParaPaySuite, {
+        const response = await axios.post("https://api.paysuite.co.mz/v1/payments", payloadParaPaySuite, {
             headers: {
                 "Authorization": `Bearer ${process.env.PAYSUITE_API_KEY}`,
-                "Content-Type": "application/json",
-                "Accept": "application/json"
+                "Content-Type": "application/json"
             }
         });
 
