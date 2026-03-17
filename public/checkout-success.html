@@ -1,50 +1,240 @@
 <!DOCTYPE html>
-<html lang="pt">
+<html class="dark" lang="pt">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Pagamento Confirmado - RiseLab</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>Pagamento Concluído - RiseLab</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Public+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#00FF7F",
+                        "accent-purple": "#8B5CF6",
+                        "background-dark": "#0B0F19",
+                    },
+                    fontFamily: { "display": ["Plus Jakarta Sans", "Public Sans", "sans-serif"] }
+                },
+            },
+        }
+    </script>
     <style>
-        body { background-color: #f8fafc; font-family: 'Inter', sans-serif; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        .glass-card {
+            background: rgba(26, 31, 46, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .glow-green { box-shadow: 0 0 40px rgba(0, 255, 127, 0.15); }
+        .bg-glow-purple { background: radial-gradient(circle at 20% 30%, rgba(139, 92, 246, 0.15) 0%, transparent 50%); }
+        .bg-glow-green { background: radial-gradient(circle at 80% 70%, rgba(0, 255, 127, 0.1) 0%, transparent 50%); }
+        
+        /* Esconde o recibo A4 da tela, mas permite que o PDF o veja */
+        #receipt-container {
+            position: absolute;
+            left: -9999px;
+            top: -9999px;
+            width: 210mm;
+            background-color: #FFFFFF;
+            padding: 20mm;
+            color: #1f2937;
+        }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full bg-white p-8 rounded-[2rem] shadow-lg border border-gray-100 text-center">
+<body class="bg-background-dark text-slate-100 min-h-screen relative overflow-x-hidden">
+    <div class="fixed inset-0 pointer-events-none overflow-hidden">
+        <div class="absolute inset-0 bg-glow-purple"></div>
+        <div class="absolute inset-0 bg-glow-green"></div>
+    </div>
+
+    <div class="relative flex flex-col min-h-screen">
+        <header class="w-full max-w-5xl mx-auto px-6 py-6 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="size-8 bg-accent-purple rounded-lg flex items-center justify-center shadow-[0_0_15px_rgba(139,92,246,0.4)]">
+                    <svg class="size-5" fill="white" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M16 6h-2v-1c0-1.657-1.343-3-3-3s-3 1.343-3 3v1h-2l-3 15h16l-3-15zm-8-1c0-.551.449-1 1-1s1 .449 1 1v1h-2v-1zm7.5 14h-11l2.25-11.25h6.5l2.25 11.25z"></path></svg>
+                </div>
+                <h2 class="text-white text-xl font-bold tracking-tight">RiseLab</h2>
+            </div>
+        </header>
+
+        <main class="flex-grow flex flex-col items-center justify-center px-6 py-12 text-center">
+            
+            <div class="mb-8 relative">
+                <div class="absolute inset-0 bg-primary/20 blur-2xl rounded-full scale-150"></div>
+                <div class="relative size-24 bg-primary text-background-dark rounded-full flex items-center justify-center glow-green">
+                    <span class="material-symbols-outlined text-5xl font-bold">check</span>
+                </div>
+            </div>
+
+            <h1 class="text-3xl md:text-4xl font-extrabold text-white mb-4 tracking-tight">Pagamento Concluído com Sucesso!</h1>
+            <p class="text-slate-400 text-lg max-w-xl mx-auto mb-10 leading-relaxed">
+                O seu negócio no piloto automático começa aqui. <br class="hidden md:block"/> O seu produto já está disponível para acesso imediato.
+            </p>
+
+            <div class="w-full max-w-md glass-card rounded-2xl p-6 shadow-2xl transition-all">
+                <div class="flex items-center gap-4 mb-8 text-left">
+                    <div class="size-14 rounded-xl bg-slate-700/30 flex items-center justify-center text-accent-purple">
+                        <span class="material-symbols-outlined text-3xl">description</span>
+                    </div>
+                    <div class="flex-grow">
+                        <h3 id="ui-product-name" class="text-white font-bold text-lg leading-tight">Carregando Produto...</h3>
+                        <p class="text-slate-400 text-sm">Acesso Liberado</p>
+                    </div>
+                </div>
+
+                <div class="space-y-3">
+                    <a id="btn-download-product" href="#" class="w-full bg-primary hover:bg-primary/90 text-background-dark font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 transition-transform active:scale-95 glow-green">
+                        <span class="material-symbols-outlined font-bold">download</span>
+                        <span>Descarregar Produto</span>
+                    </a>
+                    
+                    <button id="btn-download-receipt" class="w-full bg-slate-800 hover:bg-slate-700 text-white font-bold py-4 px-6 rounded-xl flex items-center justify-center gap-2 border border-slate-600 transition-transform active:scale-95">
+                        <span class="material-symbols-outlined">receipt_long</span>
+                        <span>Baixar Recibo (PDF)</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="mt-8 space-y-2">
+                <p class="text-slate-500 text-sm font-medium">Enviámos uma cópia dos detalhes para o seu email.</p>
+                <p class="text-slate-500 text-sm">Problemas com o acesso? <a class="text-primary hover:underline font-semibold ml-1" href="https://wa.me/258840000000">Contactar Suporte</a></p>
+            </div>
+        </main>
         
-        <div class="w-20 h-20 bg-green-100 text-green-500 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
+        <footer class="w-full py-8 text-center text-slate-500 text-xs tracking-widest uppercase opacity-50">
+            © 2026 RiseLab Technology. Todos os direitos reservados.
+        </footer>
+    </div>
+
+    <div id="receipt-container">
+        <div id="receipt-document" style="font-family: 'Inter', sans-serif; background: white; padding: 40px;">
+            <header style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                    <svg style="width: 40px; height: 40px; color: #8B5CF6;" fill="currentColor" viewBox="0 0 24 24"><path d="M16 6h-2v-1c0-1.657-1.343-3-3-3s-3 1.343-3 3v1h-2l-3 15h16l-3-15zm-8-1c0-.551.449-1 1-1s1 .449 1 1v1h-2v-1zm7.5 14h-11l2.25-11.25h6.5l2.25 11.25z"></path></svg>
+                    <span style="font-size: 28px; font-weight: bold; color: #1e293b;">RiseLab</span>
+                </div>
+                <div style="text-align: right;">
+                    <h1 style="font-size: 36px; font-weight: 300; color: #e5e7eb; margin: 0; text-transform: uppercase; letter-spacing: 2px;">Recibo</h1>
+                    <p id="receipt-date" style="margin: 5px 0 0 0; color: #6b7280; font-size: 14px;">Data: --</p>
+                    <p style="margin: 0; color: #6b7280; font-size: 14px;">Número: <span id="receipt-ref" style="color: #1e293b; font-weight: bold;">#--</span></p>
+                </div>
+            </header>
+
+            <div style="background-color: #ecfdf5; border-left: 4px solid #10B981; padding: 20px; border-radius: 0 8px 8px 0; margin-bottom: 40px;">
+                <h2 style="margin: 0 0 5px 0; color: #1e293b; font-size: 18px;">Obrigado pela sua compra!</h2>
+                <p style="margin: 0; color: #4b5563; font-size: 14px;">O acesso ao seu material está confirmado e registrado no nosso sistema.</p>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; margin-bottom: 40px;">
+                <div>
+                    <h3 style="color: #6B7280; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 12px;">Faturado a:</h3>
+                    <p id="receipt-name" style="margin: 0; font-size: 18px; font-weight: 600; color: #1e293b;">[Nome do Cliente]</p>
+                    <p id="receipt-email" style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">email@exemplo.com</p>
+                    <p id="receipt-phone" style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">+258 ---</p>
+                </div>
+                <div style="text-align: right;">
+                    <h3 style="color: #6B7280; font-size: 12px; text-transform: uppercase; border-bottom: 1px solid #f3f4f6; padding-bottom: 8px; margin-bottom: 12px;">Emitido por:</h3>
+                    <p style="margin: 0; font-size: 18px; font-weight: 600; color: #1e293b;">RiseLab Technology</p>
+                    <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">Maputo, Moçambique</p>
+                    <p style="margin: 4px 0 0 0; color: #6b7280; font-size: 14px;">suporte@riselab.co.mz</p>
+                </div>
+            </div>
+
+            <table style="width: 100%; border-collapse: collapse; margin-bottom: 40px;">
+                <thead>
+                    <tr style="border-bottom: 2px solid #f3f4f6;">
+                        <th style="text-align: left; padding: 12px 0; color: #6B7280; font-size: 12px; text-transform: uppercase;">Descrição do Produto</th>
+                        <th style="text-align: center; padding: 12px 0; color: #6B7280; font-size: 12px; text-transform: uppercase;">Qtd</th>
+                        <th style="text-align: right; padding: 12px 0; color: #6B7280; font-size: 12px; text-transform: uppercase;">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td style="padding: 20px 0;">
+                            <span id="receipt-product" style="font-weight: 600; color: #1e293b;">Produto Digital</span>
+                        </td>
+                        <td style="text-align: center; padding: 20px 0; color: #4b5563;">1</td>
+                        <td id="receipt-price" style="text-align: right; padding: 20px 0; font-weight: 600; color: #1e293b;">0.00 MZN</td>
+                    </tr>
+                </tbody>
+                <tfoot>
+                    <tr style="border-top: 2px solid #1e293b;">
+                        <td colspan="2" style="text-align: right; padding: 20px 0; font-weight: 600; color: #1e293b; text-transform: uppercase; font-size: 14px;">Total Pago</td>
+                        <td id="receipt-total" style="text-align: right; padding: 20px 0; font-weight: 700; font-size: 24px; color: #1e293b;">0.00 MZN</td>
+                    </tr>
+                </tfoot>
+            </table>
+
+            <div style="margin-top: 80px; text-align: center; border-top: 1px solid #f3f4f6; padding-top: 20px;">
+                <p style="color: #9ca3af; font-size: 12px; font-style: italic;">Documento gerado automaticamente pela plataforma RiseLab.</p>
+            </div>
         </div>
-
-        <h1 class="text-2xl font-black text-gray-900 mb-2">Pagamento Recebido!</h1>
-        <p class="text-gray-500 mb-8">Obrigado pela sua compra. O seu acesso foi liberado com sucesso.</p>
-
-        <a id="download-btn" href="#" target="_blank" class="block w-full py-4 bg-[#2563eb] hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-blue-600/30 mb-4">
-            ACESSAR MEU PRODUTO
-        </a>
-
-        <p class="text-xs text-gray-400">Um recibo também foi enviado para o seu email e WhatsApp.</p>
     </div>
 
     <script>
-        // Captura o link mágico que enviámos lá do index.html
+        // 1. Pega os parâmetros do Link da PaySuite
         const params = new URLSearchParams(window.location.search);
         const downloadLink = params.get('link');
-        const ref = params.get('ref');
+        const ref = params.get('ref') || 'RL-' + Math.floor(Math.random() * 999999);
 
-        const btn = document.getElementById('download-btn');
+        // 2. Pega os dados do cliente guardados no navegador (ou usa padrão se falhar)
+        const orderData = JSON.parse(localStorage.getItem('riseOrder')) || {
+            name: "Cliente VIP",
+            email: "N/A",
+            phone: "N/A",
+            product: "Produto RiseLab",
+            price: 0,
+            date: new Date().toLocaleDateString('pt-MZ')
+        };
 
+        // 3. Preenche a Tela Escura com o Nome do Produto e Link
+        document.getElementById('ui-product-name').innerText = orderData.product;
+        const btnDownload = document.getElementById('btn-download-product');
         if (downloadLink && downloadLink !== '#') {
-            btn.href = downloadLink;
+            btnDownload.href = downloadLink;
         } else {
-            // Se por acaso não houver link de download
-            btn.innerText = "ENTRAR EM CONTACTO";
-            btn.href = "https://wa.me/258840000000"; // Coloque o seu WhatsApp de suporte aqui
+            btnDownload.innerHTML = `<span class="material-symbols-outlined font-bold">support_agent</span><span>Contactar Suporte</span>`;
+            btnDownload.href = "https://wa.me/258840000000"; // Seu número aqui
         }
 
-        // Bônus: Se quiser, pode fazer um "fetch" aqui para o seu Render 
-        // para confirmar se o status da "ref" realmente está 'paid'.
+        // 4. Preenche os Dados do Recibo PDF Oculto
+        document.getElementById('receipt-date').innerText = `Data: ${orderData.date}`;
+        document.getElementById('receipt-ref').innerText = `#${ref}`;
+        document.getElementById('receipt-name').innerText = orderData.name;
+        document.getElementById('receipt-email').innerText = orderData.email;
+        document.getElementById('receipt-phone').innerText = `+258 ${orderData.phone}`;
+        document.getElementById('receipt-product').innerText = orderData.product;
+        document.getElementById('receipt-price').innerText = `${orderData.price.toFixed(2)} MZN`;
+        document.getElementById('receipt-total').innerText = `${orderData.price.toFixed(2)} MZN`;
+
+        // 5. Mágica do Botão "Baixar Recibo"
+        document.getElementById('btn-download-receipt').addEventListener('click', () => {
+            const btn = document.getElementById('btn-download-receipt');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = `<span class="material-symbols-outlined animate-spin">autorenew</span><span>Gerando PDF...</span>`;
+            
+            const element = document.getElementById('receipt-document');
+            
+            const opt = {
+                margin:       0,
+                filename:     `Recibo_RiseLab_${ref}.pdf`,
+                image:        { type: 'jpeg', quality: 0.98 },
+                html2canvas:  { scale: 2, useCORS: true },
+                jsPDF:        { unit: 'mm', format: 'a4', orientation: 'portrait' }
+            };
+
+            // Gera o PDF a partir da div oculta
+            html2pdf().set(opt).from(element).save().then(() => {
+                btn.innerHTML = originalText;
+            });
+        });
     </script>
 </body>
 </html>
