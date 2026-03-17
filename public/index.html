@@ -4,113 +4,166 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Checkout RiseLab</title>
+    <title>Checkout Seguro - RiseLab</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         body {
-            background-color: #0b0811;
-            color: white;
-            font-family: sans-serif;
+            background-color: #f8fafc; /* Fundo cinza bem claro */
+            color: #1e293b;
+            font-family: 'Inter', sans-serif;
         }
-
-        .card {
-            background: #12101b;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        /* Efeito de brilho no botão */
-        #pay-btn:not(:disabled):hover {
-            box-shadow: 0 0 20px rgba(0, 181, 116, 0.4);
+        .bump-active {
+            border-color: #3b82f6 !important;
+            background-color: #eff6ff !important;
         }
     </style>
 </head>
 
-<body class="min-h-screen flex items-center justify-center p-4">
-    <div class="max-w-md w-full card p-8 rounded-[2rem] shadow-2xl">
-        <div class="w-full h-52 rounded-2xl mb-6 overflow-hidden bg-gray-900 border border-white/5">
-            <img id="p-img" src="" class="w-full h-full object-cover"
-                onerror="this.src='https://via.placeholder.com/400x400?text=RiseLab+Pro'">
-        </div>
-
-        <h2 id="p-title" class="text-2xl font-bold text-center mb-1">Carregando...</h2>
-        <p id="p-price" class="text-3xl font-black text-[#00ff9d] text-center mb-8">0.00 MZN</p>
-
-        <div class="space-y-4">
-            <input id="c-name"
-                class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-[#00ff9d]/50 transition-all"
-                placeholder="Nome Completo">
-            <input id="c-email"
-                class="w-full bg-white/5 border border-white/10 p-4 rounded-xl outline-none focus:border-[#00ff9d]/50 transition-all"
-                placeholder="E-mail">
-            <div class="relative">
-                <span class="absolute left-4 top-4 text-gray-500">+258</span>
-                <input id="c-phone"
-                    class="w-full bg-white/5 border border-white/10 p-4 pl-16 rounded-xl outline-none focus:border-[#00ff9d]/50 transition-all"
-                    placeholder="Número (ex: 841234567)">
+<body class="min-h-screen flex items-center justify-center p-4 sm:p-6">
+    <div class="max-w-lg w-full">
+        
+        <div class="flex justify-between items-center mb-4 px-2">
+            <div class="flex items-center text-sm text-gray-500 font-medium">
+                <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Pagamento Seguro
+            </div>
+            <div class="bg-white border border-gray-200 text-gray-500 text-xs font-bold px-3 py-1 rounded-full tracking-wider uppercase">
+                Passo 1 de 2
             </div>
         </div>
 
-        <div id="bump-area"
-            class="mt-6 p-4 border-2 border-dashed border-[#00ff9d]/20 rounded-2xl bg-[#00ff9d]/5 hidden transition-all">
-            <label class="flex items-center cursor-pointer">
-                <input type="checkbox" id="bump-check" class="w-5 h-5 accent-[#00ff9d]">
-                <span id="bump-text" class="ml-3 text-sm font-medium text-gray-300">Adicionar Oferta Especial</span>
-            </label>
+        <div class="bg-white p-6 sm:p-8 rounded-[1.5rem] shadow-sm border border-gray-100">
+            
+            <div class="flex items-center gap-4 mb-8">
+                <div class="w-20 h-20 rounded-xl overflow-hidden bg-gray-100 flex-shrink-0 border border-gray-200">
+                    <img id="p-img" src="https://via.placeholder.com/150?text=Produto" class="w-full h-full object-cover">
+                </div>
+                <div class="flex flex-col justify-center">
+                    <h2 id="p-title" class="text-lg font-bold text-gray-900 leading-tight">Carregando...</h2>
+                    <p class="text-sm text-gray-500 mt-1">Acesso vitalício</p>
+                    <p id="p-price" class="text-lg font-black text-blue-600 mt-1">MT 0.00</p>
+                </div>
+            </div>
+
+            <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Seus Dados</h3>
+            <div class="space-y-4 mb-6">
+                <input id="c-name" class="w-full bg-white border border-gray-300 p-4 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Nome Completo">
+                
+                <div class="relative">
+                    <span class="absolute left-4 top-4 text-gray-500 font-medium">+258</span>
+                    <input id="c-phone" type="tel" class="w-full bg-white border border-gray-300 p-4 pl-16 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-gray-800 placeholder-gray-400" placeholder="84 123 4567">
+                </div>
+
+                <input id="c-email" type="email" class="w-full bg-white border border-gray-300 p-4 rounded-xl outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all text-gray-800 placeholder-gray-400" placeholder="Seu melhor Email">
+            </div>
+
+            <div id="bump-area" class="mb-8 p-5 border-2 border-dashed border-gray-300 rounded-xl bg-gray-50 hidden transition-colors duration-300 cursor-pointer">
+                <label class="flex items-start cursor-pointer w-full">
+                    <div class="flex-shrink-0 mt-1 mr-3">
+                        <input type="checkbox" id="bump-check" class="w-5 h-5 accent-blue-600 cursor-pointer rounded">
+                    </div>
+                    <div class="flex flex-col">
+                        <span id="bump-title" class="text-sm font-bold text-gray-900">SIM, quero adicionar esta oferta!</span>
+                        <span id="bump-desc" class="text-xs text-gray-500 mt-1">Adicione este bônus exclusivo e economize horas de trabalho.</span>
+                        <span id="bump-price-display" class="text-sm font-bold text-orange-500 mt-2">+ MT 0.00</span>
+                    </div>
+                </label>
+            </div>
+
+            <button id="pay-btn" class="w-full py-4 bg-[#2563eb] rounded-xl font-bold text-white text-lg hover:bg-blue-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 shadow-lg shadow-blue-600/30 disabled:opacity-70 disabled:cursor-not-allowed">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                <span id="btn-text">Pagar MT 0.00</span>
+            </button>
+            
         </div>
 
-        <button id="pay-btn"
-            class="w-full mt-8 py-5 bg-[#00b574] rounded-2xl font-bold text-lg hover:brightness-110 active:scale-95 transition-all shadow-lg shadow-green-900/20 disabled:opacity-50 disabled:cursor-not-allowed">
-            PAGAR AGORA
-        </button>
-
-        <p class="text-center text-[10px] text-gray-500 mt-6 uppercase tracking-widest">Pagamento Seguro via PaySuite
-        </p>
+        <div class="mt-4 flex items-center justify-center gap-2 text-xs text-gray-400 bg-gray-100/50 py-3 rounded-xl border border-gray-200/50">
+            <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+            Pagamento processado com segurança de nível bancário
+        </div>
     </div>
 
     <script>
+        // 1. Pegar Dados do Link
         const params = new URLSearchParams(window.location.search);
         const pName = params.get('produto') || 'Produto RiseLab';
         const pPrice = parseFloat(params.get('preco')) || 0;
         const pImg = params.get('imagem');
         const pDownload = params.get('download') || '#';
+        const productId = params.get('product_id') || '0';
+        
+        // Dados do Order Bump
         const bumpPrice = parseFloat(params.get('bump')) || 0;
+        const bumpName = params.get('bump_nome') || 'Oferta Exclusiva';
 
+        // 2. Preencher a Tela
         document.getElementById('p-title').innerText = pName;
-        document.getElementById('p-price').innerText = pPrice.toFixed(2) + " MZN";
+        document.getElementById('p-price').innerText = "MT " + pPrice.toFixed(2);
         if (pImg) document.getElementById('p-img').src = pImg;
 
-        if (bumpPrice > 0) {
-            document.getElementById('bump-area').classList.remove('hidden');
-            document.getElementById('bump-text').innerText = `Adicionar Order Bump (+${bumpPrice} MZN)`;
+        // Lógica do Preço Total no Botão
+        const btnText = document.getElementById('btn-text');
+        
+        function updateTotal() {
+            let total = pPrice;
+            const bumpCheck = document.getElementById('bump-check');
+            const bumpArea = document.getElementById('bump-area');
+            
+            if (bumpCheck && bumpCheck.checked) {
+                total += bumpPrice;
+                bumpArea.classList.add('bump-active');
+            } else if (bumpArea) {
+                bumpArea.classList.remove('bump-active');
+            }
+            btnText.innerText = "Pagar MT " + total.toFixed(2);
+            return total;
         }
 
+        // 3. Exibir Order Bump se existir
+        if (bumpPrice > 0) {
+            const bumpArea = document.getElementById('bump-area');
+            bumpArea.classList.remove('hidden');
+            document.getElementById('bump-title').innerText = "SIM, quero adicionar " + bumpName;
+            document.getElementById('bump-price-display').innerText = "+ MT " + bumpPrice.toFixed(2);
+            
+            // Atualiza preço ao clicar no checkbox
+            document.getElementById('bump-check').addEventListener('change', updateTotal);
+        }
+
+        // Inicia o botão com o preço base
+        updateTotal();
+
+        // 4. A Mágica: Enviar para o Backend e Saltar para a PaySuite
         document.getElementById('pay-btn').addEventListener('click', async () => {
             const btn = document.getElementById('pay-btn');
-            const nome = document.getElementById('c-name').value;
-            const email = document.getElementById('c-email').value;
+            const nome = document.getElementById('c-name').value.trim();
+            const email = document.getElementById('c-email').value.trim();
             const phone = document.getElementById('c-phone').value.replace(/\D/g, '');
 
             if (!nome || phone.length < 9) {
                 return alert("Por favor, preencha o seu nome e um número de telefone válido!");
             }
 
-            btn.innerText = "REDIRECIONANDO...";
+            // Muda o estado do botão para não clicarem 2x
+            const originalText = btnText.innerText;
+            btnText.innerText = "Processando...";
             btn.disabled = true;
 
-            let total = pPrice;
-            if (document.getElementById('bump-check').checked) total += bumpPrice;
+            const finalAmount = updateTotal();
 
             try {
-                // Chamada ao nosso servidor no Render
+                // Chama o seu servidor Render (que agora está super blindado)
                 const res = await fetch('https://riselab-minimize-oficial.onrender.com/api/pagar-paysuite', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         customer_name: nome,
-                        customer_email: email,
-                        phone: phone, // O backend já cuida de colocar o 258
-                        amount: total,
-                        reference: "RISE" + Date.now(),
+                        customer_email: email || "cliente@riselab.com",
+                        phone: phone,
+                        amount: finalAmount,
+                        product_id: productId,
+                        // Aqui passamos a URL de sucesso já com o link do ficheiro
                         return_url: window.location.origin + "/checkout-success.html?link=" + encodeURIComponent(pDownload)
                     })
                 });
@@ -118,22 +171,21 @@
                 const result = await res.json();
 
                 if (result.success && result.url) {
-                    // 🚀 O SALTO PARA A PÁGINA DE PAGAMENTO
+                    // 🚀 SALTO IMEDIATO PARA A PÁGINA DA PAYSUITE
                     window.location.href = result.url;
                 } else {
-                    console.error("Fofoca detalhada:", result.details);
-                    alert("Erro ao processar: " + (result.details?.message || "Tente novamente ou use outro número."));
+                    console.error("Erro detalhado:", result);
+                    alert("Não foi possível gerar o pagamento no momento. Verifique seus dados.");
+                    btnText.innerText = originalText;
                     btn.disabled = false;
-                    btn.innerText = "PAGAR AGORA";
                 }
             } catch (e) {
                 console.error("Erro de conexão:", e);
-                alert("Erro de conexão com o servidor. Verifique sua internet.");
+                alert("Erro de conexão com o servidor. Tente novamente.");
+                btnText.innerText = originalText;
                 btn.disabled = false;
-                btn.innerText = "PAGAR AGORA";
             }
         });
     </script>
 </body>
-
 </html>

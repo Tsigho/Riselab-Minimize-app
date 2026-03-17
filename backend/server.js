@@ -77,10 +77,9 @@ async function handleAutomation(sock, msg, userText) {
 
 connectToWhatsApp();
 
-// 🚀 ROTA PAYSUITE COM RASTREIO E DASHBOARD
+// 🚀 ROTA PAYSUITE COM RASTREIO E CONSTRUÇÃO DE LINK VIA ID
 app.post('/api/pagar-paysuite', async (req, res) => {
     console.log('--- INICIANDO PROCESSO DE VENDA (TECH) ---');
-    // Adicionado product_id para facilitar o rastreio do produto
     const { customer_name, customer_email, phone, amount, reference, return_url, product_id } = req.body;
 
     let cleanPhone = phone ? phone.replace(/\D/g, '') : "";
@@ -88,7 +87,7 @@ app.post('/api/pagar-paysuite', async (req, res) => {
 
     const transactionRef = reference || "RISE" + Date.now();
 
-    // 🛡️ 1. SALVAR COMO PENDENTE NO DASHBOARD (Antes de ir para a PaySuite)
+    // 🛡️ 1. SALVAR COMO PENDENTE NO DASHBOARD
     try {
         await supabase.from('purchases').insert([{
             customer_name: customer_name || "Cliente RiseLab",
@@ -96,7 +95,7 @@ app.post('/api/pagar-paysuite', async (req, res) => {
             phone: cleanPhone,
             amount: Number(amount),
             transaction_ref: transactionRef,
-            status: 'pending', // Marca como pendente/desistência até pagar
+            status: 'pending',
             product_id: product_id || null
         }]);
         console.log(`📝 Compra Registada como Pendente: ${transactionRef}`);
@@ -112,12 +111,10 @@ app.post('/api/pagar-paysuite', async (req, res) => {
             amount: Number(amount),
             reference: transactionRef,
             currency: "MZN",
-            // URLs para controle de fluxo
             return_url: return_url || `https://riselab-minimize-app.vercel.app/checkout-success.html?ref=${transactionRef}`,
             cancel_url: `https://riselab-minimize-app.vercel.app/checkout.html?status=cancelled&ref=${transactionRef}`
         };
 
-        // 🎯 O LINK CORRECTO DA PAYSUITE
         const response = await axios.post("https://paysuite.tech/api/v1/payments", payloadParaPaySuite, {
             headers: {
                 "Authorization": `Bearer ${process.env.PAYSUITE_API_KEY}`,
@@ -128,19 +125,32 @@ app.post('/api/pagar-paysuite', async (req, res) => {
 
         console.log("Resposta Bruta PaySuite:", JSON.stringify(response.data));
 
-        // Captura o link de redirecionamento
-        const paymentUrl = response.data.url ||
-            response.data.payment_url ||
-            (response.data.data && (response.data.data.url || response.data.data.payment_url));
+        // 1. Tenta ver se eles mandaram o link pronto
+        let paymentUrl = response.data.url || response.data.payment_url || (response.data.data && (response.data.data.url || response.data.data.payment_url));
 
+        // 2. 🚀 O HACK ROBUSTO: Construindo o link com o ID gerado
+        if (!paymentUrl) {
+            const paymentId = response.data.id || 
+                              response.data.payment_id || 
+                              response.data.uid ||
+                              (response.data.data && (response.data.data.id || response.data.data.payment_id || response.data.data.uid));
+
+            if (paymentId) {
+                console.log("🔥 ID encontrado! Construindo o link na marra...");
+                paymentUrl = `https://paysuite.tech/checkout/${paymentId}`;
+            }
+        }
+
+        // 3. O Salto Final
         if (paymentUrl) {
-            console.log("✅ Checkout Gerado! Enviando URL para salto.");
+            console.log("✅ Checkout Pronto! Redirecionando para:", paymentUrl);
             return res.json({ success: true, url: paymentUrl, reference: transactionRef });
         } else {
-            return res.status(422).json({
-                success: false,
-                details: "A PaySuite não devolveu o link de redirecionamento.",
-                full_response: response.data
+            console.error("❌ Nem link nem ID encontrados na resposta:", response.data);
+            return res.status(422).json({ 
+                success: false, 
+                details: "Não foi possível extrair o ID do pagamento da PaySuite.", 
+                full_response: response.data 
             });
         }
 
@@ -157,15 +167,11 @@ app.post('/webhook/payment', async (req, res) => {
     console.log(`🔹 Webhook Recebido - Ref: ${reference} | Status: ${status}`);
 
     if (status === 'completed' || status === 'paid') {
-        // Marca como pago e libera o download no dashboard
         await supabase.from('purchases').update({ status: 'paid', paid_at: new Date() }).eq('transaction_ref', reference);
         console.log(`💰 VENDA CONCLUÍDA NO DASHBOARD: ${reference}`);
-
-        // Emite evento para atualizar o dashboard em tempo real (Opcional)
         io.emit('new_sale', { reference, status: 'paid' });
 
     } else if (status === 'cancelled' || status === 'failed') {
-        // Marca como cancelado
         await supabase.from('purchases').update({ status: 'cancelled' }).eq('transaction_ref', reference);
         console.log(`❌ VENDA CANCELADA NO DASHBOARD: ${reference}`);
     }
